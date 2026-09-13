@@ -13,6 +13,12 @@ int ambnc_net_wait_many(const int *socks,
                         unsigned long signal_mask,
                         unsigned long *signals,
                         unsigned long *ready_mask);
+int ambnc_net_wait_many_timeout(const int *socks,
+                                unsigned int count,
+                                unsigned long signal_mask,
+                                unsigned long *signals,
+                                unsigned long *ready_mask,
+                                unsigned int timeout_seconds);
 void ambnc_net_close_socket(int sock);
 
 #endif
