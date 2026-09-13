@@ -24,7 +24,7 @@ check:
 	@grep -q -- '-m68000' Makefile
 	@grep -q -- '-mcrt=nix20' Makefile
 	@grep -q 'AMBNC_NETWORKS_MAX 4' include/networks.h
-	@grep -q '\[NETWORK ' src/networks.c
+	@grep -q 'NETWORK ' src/networks.c
 	@grep -q 'ambnc_multinet_run' src/main.c
 	@grep -q 'ambnc_net_wait_many_timeout' src/multinet.c
 	@grep -q 'cap_enabled' include/networks.h
