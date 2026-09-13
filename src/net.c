@@ -5,6 +5,7 @@
 #include <proto/exec.h>
 #include <proto/bsdsocket.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <netinet/in.h>
 #include <netdb.h>
 
@@ -55,6 +56,34 @@ int ambnc_net_connect_ipv4(const char *host, unsigned short port)
     return sock;
 }
 
+int ambnc_net_listen_ipv4(unsigned short port)
+{
+    struct sockaddr_in address;
+    int sock;
+    int reuse = 1;
+
+    sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock < 0) return -1;
+
+    (void)setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (STRPTR)&reuse, sizeof(reuse));
+    memset(&address, 0, sizeof(address));
+    address.sin_family = AF_INET;
+    address.sin_port = htons(port);
+    address.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    if (bind(sock, (struct sockaddr *)&address, sizeof(address)) < 0 ||
+        listen(sock, 1) < 0) {
+        CloseSocket(sock);
+        return -1;
+    }
+    return sock;
+}
+
+int ambnc_net_accept(int listener)
+{
+    return accept(listener, 0, 0);
+}
+
 int ambnc_net_send_all(int sock, const char *data, unsigned int length)
 {
     unsigned int sent = 0;
@@ -69,6 +98,38 @@ int ambnc_net_send_all(int sock, const char *data, unsigned int length)
 int ambnc_net_recv(int sock, char *buffer, unsigned int length)
 {
     return recv(sock, buffer, length, 0);
+}
+
+int ambnc_net_wait_many(const int *socks,
+                        unsigned int count,
+                        unsigned long signal_mask,
+                        unsigned long *signals,
+                        unsigned long *ready_mask)
+{
+    fd_set readfds;
+    ULONG signal_bits = (ULONG)signal_mask;
+    unsigned long ready = 0;
+    int maxfd = -1;
+    int rc;
+    unsigned int i;
+
+    FD_ZERO(&readfds);
+    for (i = 0; i < count; ++i) {
+        if (socks[i] >= 0) {
+            FD_SET(socks[i], &readfds);
+            if (socks[i] > maxfd) maxfd = socks[i];
+        }
+    }
+
+    rc = WaitSelect(maxfd + 1, &readfds, 0, 0, 0, &signal_bits);
+    if (signals != 0) *signals = (unsigned long)signal_bits;
+    if (rc < 0) return -1;
+
+    for (i = 0; i < count && i < sizeof(unsigned long) * 8U; ++i) {
+        if (socks[i] >= 0 && FD_ISSET(socks[i], &readfds)) ready |= 1UL << i;
+    }
+    if (ready_mask != 0) *ready_mask = ready;
+    return rc;
 }
 
 void ambnc_net_close_socket(int sock)
