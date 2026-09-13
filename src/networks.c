@@ -45,6 +45,21 @@ static int set_number(unsigned long *out, const char *value, unsigned long minv,
     return 0;
 }
 
+static int set_bool(int *out, const char *value)
+{
+    if (same_ci(value, "YES") || same_ci(value, "TRUE") ||
+        same_ci(value, "ON") || strcmp(value, "1") == 0) {
+        *out = 1;
+        return 0;
+    }
+    if (same_ci(value, "NO") || same_ci(value, "FALSE") ||
+        same_ci(value, "OFF") || strcmp(value, "0") == 0) {
+        *out = 0;
+        return 0;
+    }
+    return -1;
+}
+
 void ambnc_networks_init(struct ambnc_networks_config *config)
 {
     memset(config, 0, sizeof(*config));
@@ -91,6 +106,7 @@ int ambnc_networks_load(struct ambnc_networks_config *config, const char *path,
             current->port = 6667;
             current->listen_port = (unsigned short)(16667U + config->count - 1U);
             current->backlog_lines = AMBNC_STATE_RING_LINES_DEFAULT;
+            current->tls_mode = AMBNC_TLS_PLAIN;
             continue;
         }
 
@@ -105,7 +121,15 @@ int ambnc_networks_load(struct ambnc_networks_config *config, const char *path,
         else if (same_ci(text, "NICK")) copy_bounded(current->nick, sizeof(current->nick), eq);
         else if (same_ci(text, "USER")) copy_bounded(current->user, sizeof(current->user), eq);
         else if (same_ci(text, "PASS")) copy_bounded(current->pass, sizeof(current->pass), eq);
-        else if (same_ci(text, "PORT")) {
+        else if (same_ci(text, "CAP")) {
+            if (set_bool(&current->cap_enabled, eq) != 0) goto bad_line;
+        } else if (same_ci(text, "SASL_PLAIN")) {
+            if (set_bool(&current->sasl_plain, eq) != 0) goto bad_line;
+        } else if (same_ci(text, "TLS_MODE")) {
+            if (same_ci(eq, "PLAIN")) current->tls_mode = AMBNC_TLS_PLAIN;
+            else if (same_ci(eq, "PROXY")) current->tls_mode = AMBNC_TLS_PROXY;
+            else goto bad_line;
+        } else if (same_ci(text, "PORT")) {
             unsigned long v;
             if (set_number(&v, eq, 1, 65535) != 0) goto bad_line;
             current->port = (unsigned short)v;
@@ -134,6 +158,13 @@ int ambnc_networks_load(struct ambnc_networks_config *config, const char *path,
                 return -1;
             }
             if (n->user[0] == '\0') copy_bounded(n->user, sizeof(n->user), n->nick);
+            if (n->sasl_plain) {
+                n->cap_enabled = 1;
+                if (n->pass[0] == '\0') {
+                    snprintf(error, error_size, "network %s SASL requires PASS", n->name);
+                    return -1;
+                }
+            }
         }
     }
     return 0;
