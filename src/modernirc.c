@@ -40,22 +40,22 @@ static int b64_encode(const unsigned char *src, unsigned int length,
 
 static int send_sasl_payload(int sock, const struct ambnc_network_config *config)
 {
-    unsigned char plain[192];
-    char encoded[260];
-    char line[300];
-    unsigned int ulen = (unsigned int)strlen(config->sasl_user);
-    unsigned int plen = (unsigned int)strlen(config->sasl_pass);
+    unsigned char plain[160];
+    char encoded[224];
+    char line[256];
+    unsigned int ulen = (unsigned int)strlen(config->user);
+    unsigned int plen = (unsigned int)strlen(config->pass);
     unsigned int length;
     int written;
 
     if (ulen == 0U || plen == 0U) return -1;
     if (ulen * 2U + plen + 2U > sizeof(plain)) return -1;
 
-    memcpy(plain, config->sasl_user, ulen);
+    memcpy(plain, config->user, ulen);
     plain[ulen] = 0;
-    memcpy(plain + ulen + 1U, config->sasl_user, ulen);
+    memcpy(plain + ulen + 1U, config->user, ulen);
     plain[ulen + 1U + ulen] = 0;
-    memcpy(plain + ulen + 2U + ulen, config->sasl_pass, plen);
+    memcpy(plain + ulen + 2U + ulen, config->pass, plen);
     length = ulen + 1U + ulen + 1U + plen;
 
     if (b64_encode(plain, length, encoded, sizeof(encoded)) != 0) return -1;
