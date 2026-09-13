@@ -20,12 +20,18 @@
 
 Runtime qualification remains separate; see `docs/M1.md`.
 
-## M2 — Downstream client
+## M2 — Downstream client — IMPLEMENTED
 
-- Local listener
+- local IPv4 listener with configurable port
 - one downstream IRC client
-- relay between downstream and upstream
-- clean disconnect/reconnect semantics
+- local consumption of downstream PASS/NICK/USER registration
+- minimal synthetic 001 attach welcome
+- bidirectional relay between downstream and upstream
+- downstream QUIT detaches only the client
+- upstream loss closes downstream cleanly before reconnect
+- one `WaitSelect()` loop services upstream, listener, downstream and Ctrl-C
+
+Runtime qualification remains separate; see `docs/M2.md`.
 
 ## M3 — Session/state
 
