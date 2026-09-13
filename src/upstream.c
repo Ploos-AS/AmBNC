@@ -8,6 +8,7 @@
 #include "downstream.h"
 #include "irc.h"
 #include "net.h"
+#include "state.h"
 #include "upstream.h"
 
 #define AMBNC_RECV_BUFFER 512
@@ -15,6 +16,7 @@
 struct upstream_line_context {
     int sock;
     struct ambnc_downstream *downstream;
+    struct ambnc_session_state *state;
 };
 
 struct downstream_line_context {
@@ -37,8 +39,11 @@ static int command_is(const char *line, const char *command)
 static void handle_upstream_line(const char *line, void *userdata)
 {
     struct upstream_line_context *context = (struct upstream_line_context *)userdata;
+    int attached = context->downstream->client >= 0;
 
     printf("U< %s\n", line);
+    ambnc_state_observe_line(context->state, line, attached);
+
     if (strncmp(line, "PING ", 5) == 0) {
         char response[AMBNC_IRC_LINE_MAX + 1];
         int written = snprintf(response, sizeof(response), "PONG %s", line + 5);
@@ -49,10 +54,8 @@ static void handle_upstream_line(const char *line, void *userdata)
         return;
     }
 
-    if (context->downstream->client >= 0 &&
-        ambnc_downstream_send_line(context->downstream, line) != 0) {
+    if (attached && ambnc_downstream_send_line(context->downstream, line) != 0)
         ambnc_downstream_close_client(context->downstream);
-    }
 }
 
 static void handle_downstream_line(const char *line, void *userdata)
@@ -61,9 +64,9 @@ static void handle_downstream_line(const char *line, void *userdata)
 
     printf("D< %s\n", line);
     if (command_is(line, "PASS") || command_is(line, "NICK") ||
-        command_is(line, "USER")) {
+        command_is(line, "USER"))
         return;
-    }
+
     if (command_is(line, "QUIT")) {
         ambnc_downstream_close_client(context->downstream);
         return;
@@ -76,7 +79,8 @@ static void handle_downstream_line(const char *line, void *userdata)
 
 static int run_connected(const struct ambnc_upstream_config *config,
                          int sock,
-                         struct ambnc_downstream *downstream)
+                         struct ambnc_downstream *downstream,
+                         struct ambnc_session_state *state)
 {
     struct ambnc_irc_framer upstream_framer;
     struct upstream_line_context upstream_context;
@@ -84,8 +88,10 @@ static int run_connected(const struct ambnc_upstream_config *config,
     char buffer[AMBNC_RECV_BUFFER];
 
     ambnc_irc_framer_init(&upstream_framer);
+    ambnc_state_init(state, config->nick);
     upstream_context.sock = sock;
     upstream_context.downstream = downstream;
+    upstream_context.state = state;
     downstream_context.upstream_sock = sock;
     downstream_context.downstream = downstream;
 
@@ -116,7 +122,7 @@ static int run_connected(const struct ambnc_upstream_config *config,
         }
 
         if ((ready & 2UL) != 0)
-            (void)ambnc_downstream_accept(downstream, config->nick);
+            (void)ambnc_downstream_accept(downstream, state->nick);
 
         if ((ready & 4UL) != 0 && downstream->client >= 0) {
             int received = ambnc_net_recv(downstream->client, buffer, sizeof(buffer));
@@ -138,6 +144,7 @@ int ambnc_upstream_run(const struct ambnc_upstream_config *config)
 {
     static const unsigned int backoff_seconds[] = { 1, 2, 4, 8, 16, 30 };
     struct ambnc_downstream downstream;
+    static struct ambnc_session_state state;
     unsigned int backoff_index = 0;
 
     if (config == 0 || config->host == 0 || config->nick == 0 || config->user == 0 ||
@@ -167,7 +174,7 @@ int ambnc_upstream_run(const struct ambnc_upstream_config *config)
         if (sock >= 0) {
             puts("AmBNC: upstream connected");
             backoff_index = 0;
-            (void)run_connected(config, sock, &downstream);
+            (void)run_connected(config, sock, &downstream, &state);
             ambnc_net_close_socket(sock);
             if (downstream.client >= 0) {
                 (void)ambnc_downstream_send_line(&downstream,
