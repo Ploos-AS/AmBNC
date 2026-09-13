@@ -1,6 +1,6 @@
 # AmBNC Roadmap
 
-## M0 — Foundation
+## M0 — Foundation — COMPLETE
 
 - Repository and licensing baseline
 - AmigaOS 2.04+ / 68000 target documented
@@ -9,7 +9,7 @@
 - ARexx port name fixed as `AMBNC`
 - Minimal native executable skeleton
 
-## M1 — Upstream IRC session
+## M1 — Upstream IRC session — IMPLEMENTED
 
 - `bsdsocket.library` adapter
 - TCP connect/disconnect
@@ -17,6 +17,8 @@
 - PASS/NICK/USER registration
 - PING/PONG
 - reconnect with bounded backoff
+
+Runtime qualification remains separate; see `docs/M1.md`.
 
 ## M2 — Downstream client
 
