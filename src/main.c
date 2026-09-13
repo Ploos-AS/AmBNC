@@ -4,29 +4,39 @@
 #include "ambnc.h"
 #include "upstream.h"
 
+#define AMBNC_DEFAULT_LISTEN_PORT 16667
+
 static void usage(const char *program)
 {
-    printf("Usage: %s HOST PORT NICK [USER] [PASS]\n", program);
-    puts("Example: AmBNC irc.libera.chat 6667 AmBNC ambnc secret");
+    printf("Usage: %s HOST PORT NICK [USER] [PASS] [LISTEN_PORT]\n", program);
+    puts("Example: AmBNC irc.libera.chat 6667 AmBNC ambnc secret 16667");
 }
 
 int ambnc_run(int argc, char **argv)
 {
     struct ambnc_upstream_config config;
     long port;
+    long listen_port = AMBNC_DEFAULT_LISTEN_PORT;
 
     puts(AMBNC_NAME " " AMBNC_VERSION);
     puts("ARexx port reserved: " AMBNC_REXX_PORT);
 
-    if (argc < 4 || argc > 6) {
+    if (argc < 4 || argc > 7) {
         usage(argv[0]);
         return 10;
     }
 
     port = strtol(argv[2], 0, 10);
     if (port <= 0 || port > 65535) {
-        puts("AmBNC: invalid TCP port");
+        puts("AmBNC: invalid upstream TCP port");
         return 10;
+    }
+    if (argc >= 7) {
+        listen_port = strtol(argv[6], 0, 10);
+        if (listen_port <= 0 || listen_port > 65535) {
+            puts("AmBNC: invalid downstream TCP port");
+            return 10;
+        }
     }
 
     config.host = argv[1];
@@ -34,6 +44,7 @@ int ambnc_run(int argc, char **argv)
     config.nick = argv[3];
     config.user = argc >= 5 ? argv[4] : argv[3];
     config.pass = argc >= 6 ? argv[5] : 0;
+    config.listen_port = (unsigned short)listen_port;
 
     return ambnc_upstream_run(&config);
 }
