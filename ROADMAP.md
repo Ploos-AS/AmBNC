@@ -67,11 +67,18 @@ Runtime qualification remains separate; see `docs/M4.md`.
 
 Runtime qualification remains separate; see `docs/M5.md`. `RELOAD` is reserved/accepted but is a no-op while configuration remains CLI-only.
 
-## M6 — Multiple sessions
+## M6 — Multiple sessions — IMPLEMENTED
 
-- multiple IRC networks
-- multiple downstream clients where practical
-- per-network configuration/state
+- optional `-c CONFIG` multi-network mode with legacy single-session CLI preserved
+- up to four named `[NETWORK name]` sections
+- one upstream connection, downstream listener/client, state and backlog set per network
+- simultaneous socket servicing in one bounded `WaitSelect()` loop
+- independent reconnect state per network
+- per-network HOST/PORT/NICK/USER/PASS/LISTEN_PORT/BACKLOG_LINES configuration
+- one downstream client per network, allowing multiple downstream clients across different networks
+- aggregate ARexx status/control compatibility retained
+
+Runtime qualification remains separate; see `docs/M6.md`. Explicit per-network ARexx send routing remains a hardening item; legacy send commands use the first connected network.
 
 ## M7 — Modern IRC extensions
 
