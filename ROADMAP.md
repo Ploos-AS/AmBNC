@@ -94,7 +94,28 @@ Runtime qualification remains separate; see `docs/M7.md`.
 
 ## M8 — Qualification and release
 
-- automated host/static qualification
-- FS-UAE/AROS CI where practical
-- local AmigaOS 2.04+ runtime qualification
-- release packaging and documentation
+### M8.1 — Automated Bebbo + FS-UAE/AROS qualification — PASS
+
+- M7 static checks PASS
+- pinned Bebbo 68000 native build PASS
+- output recognized as AmigaOS loadseg executable
+- FS-UAE A1200 / internal AROS guest execution PASS
+- qualification evidence uploaded as GitHub Actions artifact
+
+See `docs/M8_1.md`.
+
+### M8.2 — Local AmigaOS runtime qualification — NEXT
+
+- actual AmigaOS 2.04+ / Workbench runtime
+- `bsdsocket.library` enabled
+- live IRC connect/reconnect
+- downstream attach/detach and backlog replay
+- ARexx command and hook qualification
+- multi-network qualification
+- CAP/SASL and TLS-proxy qualification
+
+### M8.3 — Release packaging
+
+- release documentation
+- package archive/checksums
+- GitHub release artifacts
