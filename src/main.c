@@ -1,7 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "ambnc.h"
+#include "multinet.h"
+#include "networks.h"
 #include "state.h"
 #include "upstream.h"
 
@@ -10,7 +13,22 @@
 static void usage(const char *program)
 {
     printf("Usage: %s HOST PORT NICK [USER] [PASS] [LISTEN_PORT] [BACKLOG_LINES]\n", program);
+    printf("       %s -c CONFIG\n", program);
     puts("Example: AmBNC irc.libera.chat 6667 AmBNC ambnc secret 16667 32");
+    puts("Example: AmBNC -c S:AmBNC.cfg");
+}
+
+static int run_config(const char *path)
+{
+    struct ambnc_networks_config networks;
+    char error[128];
+
+    if (ambnc_networks_load(&networks, path, error, sizeof(error)) != 0) {
+        printf("AmBNC: config error: %s\n", error);
+        return 10;
+    }
+    printf("AmBNC: loaded %u network(s) from %s\n", networks.count, path);
+    return ambnc_multinet_run(&networks);
 }
 
 int ambnc_run(int argc, char **argv)
@@ -22,6 +40,9 @@ int ambnc_run(int argc, char **argv)
 
     puts(AMBNC_NAME " " AMBNC_VERSION);
     puts("ARexx port reserved: " AMBNC_REXX_PORT);
+
+    if (argc == 3 && strcmp(argv[1], "-c") == 0)
+        return run_config(argv[2]);
 
     if (argc < 4 || argc > 8) {
         usage(argv[0]);
