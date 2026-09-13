@@ -1,12 +1,30 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <dos/dos.h>
+#include <proto/dos.h>
+
 #include "rexx_events.h"
 
 #define AMBNC_HOOK_DIR "REXX:AmBNC"
 
 static struct ambnc_rexx *bound_rexx;
 static struct ambnc_rexx_control *bound_control;
+
+static int hook_exists(const char *event_name)
+{
+    char path[256];
+    BPTR lock;
+    int written;
+
+    if (event_name == 0) return 0;
+    written = snprintf(path, sizeof(path), "%s/%s.rexx", AMBNC_HOOK_DIR, event_name);
+    if (written <= 0 || written >= (int)sizeof(path)) return 0;
+    lock = Lock((STRPTR)path, ACCESS_READ);
+    if (lock == 0) return 0;
+    UnLock(lock);
+    return 1;
+}
 
 void ambnc_rexx_events_bind(struct ambnc_rexx *rexx,
                             struct ambnc_rexx_control *control)
@@ -17,7 +35,9 @@ void ambnc_rexx_events_bind(struct ambnc_rexx *rexx,
 
 void ambnc_rexx_emit_lifecycle(const char *event_name, const char *detail)
 {
-    if (bound_rexx == 0 || bound_control == 0 || event_name == 0) return;
+    if (bound_rexx == 0 || bound_control == 0 || event_name == 0 ||
+        !hook_exists(event_name))
+        return;
     (void)ambnc_rexx_run_event(bound_rexx, bound_control, AMBNC_HOOK_DIR,
                                event_name, "", "", detail != 0 ? detail : "");
 }
@@ -71,7 +91,7 @@ void ambnc_rexx_emit_irc_line(const char *line)
     else if (strcmp(command, "TOPIC") == 0) snprintf(event_name, sizeof(event_name), "ON_TOPIC");
     else if (strcmp(command, "NICK") == 0) snprintf(event_name, sizeof(event_name), "ON_NICK");
 
-    if (event_name[0] != '\0')
+    if (event_name[0] != '\0' && hook_exists(event_name))
         (void)ambnc_rexx_run_event(bound_rexx, bound_control, AMBNC_HOOK_DIR,
                                    event_name, nick, target, text);
 }
