@@ -1,5 +1,9 @@
+#include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+
+#include <dos/dos.h>
+#include <proto/dos.h>
 
 #include "state.h"
 
@@ -118,24 +122,46 @@ static struct ambnc_target_ring *ring_for(struct ambnc_session_state *state, con
     return &state->rings[state->ring_count++];
 }
 
-static void ring_push(struct ambnc_target_ring *ring, const char *line)
+static void stamp_line(struct ambnc_ring_line *entry)
+{
+    struct DateStamp stamp;
+    DateStamp(&stamp);
+    entry->days = (unsigned long)stamp.ds_Days;
+    entry->minutes = (unsigned long)stamp.ds_Minute;
+    entry->ticks = (unsigned long)stamp.ds_Tick;
+}
+
+static void ring_push(struct ambnc_session_state *state,
+                      struct ambnc_target_ring *ring,
+                      const char *line)
 {
     unsigned int slot;
-    if (ring->count < AMBNC_STATE_RING_LINES) {
-        slot = (ring->start + ring->count) % AMBNC_STATE_RING_LINES;
+    unsigned int limit = state->ring_lines_limit;
+
+    if (limit == 0 || limit > AMBNC_STATE_RING_LINES_MAX)
+        limit = AMBNC_STATE_RING_LINES_DEFAULT;
+
+    if (ring->count < limit) {
+        slot = (ring->start + ring->count) % limit;
         ++ring->count;
     } else {
         slot = ring->start;
-        ring->start = (ring->start + 1U) % AMBNC_STATE_RING_LINES;
+        ring->start = (ring->start + 1U) % limit;
         ++ring->dropped;
     }
     copy_bounded(ring->lines[slot].line, AMBNC_IRC_LINE_MAX + 1, line);
+    stamp_line(&ring->lines[slot]);
 }
 
-void ambnc_state_init(struct ambnc_session_state *state, const char *nick)
+void ambnc_state_init(struct ambnc_session_state *state,
+                      const char *nick,
+                      unsigned int ring_lines_limit)
 {
     memset(state, 0, sizeof(*state));
     copy_bounded(state->nick, sizeof(state->nick), nick != 0 ? nick : "");
+    if (ring_lines_limit == 0 || ring_lines_limit > AMBNC_STATE_RING_LINES_MAX)
+        ring_lines_limit = AMBNC_STATE_RING_LINES_DEFAULT;
+    state->ring_lines_limit = ring_lines_limit;
 }
 
 void ambnc_state_observe_line(struct ambnc_session_state *state,
@@ -186,6 +212,57 @@ void ambnc_state_observe_line(struct ambnc_session_state *state,
         if (same_ci(target, state->nick) && sender[0] != '\0')
             copy_bounded(target, sizeof(target), sender);
         ring = ring_for(state, target);
-        if (ring != 0) ring_push(ring, line);
+        if (ring != 0) ring_push(state, ring, line);
     }
+}
+
+int ambnc_state_replay(struct ambnc_session_state *state,
+                       ambnc_state_send_line_fn send_line,
+                       void *userdata)
+{
+    unsigned int i;
+
+    if (state == 0 || send_line == 0) return -1;
+
+    for (i = 0; i < state->ring_count; ++i) {
+        struct ambnc_target_ring *ring = &state->rings[i];
+        unsigned int j;
+        unsigned int limit = state->ring_lines_limit;
+        char notice[AMBNC_IRC_LINE_MAX + 1];
+        int written;
+
+        if (limit == 0 || limit > AMBNC_STATE_RING_LINES_MAX)
+            limit = AMBNC_STATE_RING_LINES_DEFAULT;
+        if (ring->count == 0) continue;
+
+        written = snprintf(notice, sizeof(notice),
+                           ":AmBNC NOTICE * :Backlog target=%s lines=%u dropped=%lu",
+                           ring->target,
+                           ring->count,
+                           ring->dropped);
+        if (written <= 0 || written >= (int)sizeof(notice) ||
+            send_line(userdata, notice) != 0)
+            return -1;
+
+        for (j = 0; j < ring->count; ++j) {
+            unsigned int slot = (ring->start + j) % limit;
+            const struct ambnc_ring_line *entry = &ring->lines[slot];
+
+            written = snprintf(notice, sizeof(notice),
+                               ":AmBNC NOTICE * :Backlog stamp=%lu:%lu:%lu target=%s",
+                               entry->days,
+                               entry->minutes,
+                               entry->ticks,
+                               ring->target);
+            if (written <= 0 || written >= (int)sizeof(notice) ||
+                send_line(userdata, notice) != 0 ||
+                send_line(userdata, entry->line) != 0)
+                return -1;
+        }
+
+        ring->start = 0;
+        ring->count = 0;
+        ring->dropped = 0;
+    }
+    return 0;
 }
