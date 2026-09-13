@@ -100,11 +100,12 @@ int ambnc_net_recv(int sock, char *buffer, unsigned int length)
     return recv(sock, buffer, length, 0);
 }
 
-int ambnc_net_wait_many(const int *socks,
-                        unsigned int count,
-                        unsigned long signal_mask,
-                        unsigned long *signals,
-                        unsigned long *ready_mask)
+static int wait_many_internal(const int *socks,
+                              unsigned int count,
+                              unsigned long signal_mask,
+                              unsigned long *signals,
+                              unsigned long *ready_mask,
+                              struct timeval *timeout)
 {
     fd_set readfds;
     ULONG signal_bits = (ULONG)signal_mask;
@@ -121,7 +122,7 @@ int ambnc_net_wait_many(const int *socks,
         }
     }
 
-    rc = WaitSelect(maxfd + 1, &readfds, 0, 0, 0, &signal_bits);
+    rc = WaitSelect(maxfd + 1, &readfds, 0, 0, timeout, &signal_bits);
     if (signals != 0) *signals = (unsigned long)signal_bits;
     if (rc < 0) return -1;
 
@@ -130,6 +131,28 @@ int ambnc_net_wait_many(const int *socks,
     }
     if (ready_mask != 0) *ready_mask = ready;
     return rc;
+}
+
+int ambnc_net_wait_many(const int *socks,
+                        unsigned int count,
+                        unsigned long signal_mask,
+                        unsigned long *signals,
+                        unsigned long *ready_mask)
+{
+    return wait_many_internal(socks, count, signal_mask, signals, ready_mask, 0);
+}
+
+int ambnc_net_wait_many_timeout(const int *socks,
+                                unsigned int count,
+                                unsigned long signal_mask,
+                                unsigned long *signals,
+                                unsigned long *ready_mask,
+                                unsigned int timeout_seconds)
+{
+    struct timeval timeout;
+    timeout.tv_sec = (long)timeout_seconds;
+    timeout.tv_usec = 0;
+    return wait_many_internal(socks, count, signal_mask, signals, ready_mask, &timeout);
 }
 
 void ambnc_net_close_socket(int sock)
