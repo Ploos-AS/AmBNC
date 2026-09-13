@@ -8,6 +8,11 @@
 #define AMBNC_HOST_MAX 127
 #define AMBNC_USER_MAX 31
 #define AMBNC_PASS_MAX 63
+#define AMBNC_SASL_USER_MAX 63
+#define AMBNC_SASL_PASS_MAX 95
+
+#define AMBNC_TLS_PLAIN 0
+#define AMBNC_TLS_PROXY 1
 
 struct ambnc_network_config {
     char name[AMBNC_NETWORK_NAME_MAX + 1];
@@ -18,6 +23,11 @@ struct ambnc_network_config {
     char pass[AMBNC_PASS_MAX + 1];
     unsigned short listen_port;
     unsigned int backlog_lines;
+    int cap_enabled;
+    int sasl_plain;
+    char sasl_user[AMBNC_SASL_USER_MAX + 1];
+    char sasl_pass[AMBNC_SASL_PASS_MAX + 1];
+    int tls_mode;
 };
 
 struct ambnc_networks_config {
