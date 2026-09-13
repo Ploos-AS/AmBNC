@@ -44,11 +44,16 @@ Runtime qualification remains separate; see `docs/M2.md`.
 
 Runtime qualification remains separate; see `docs/M3.md`.
 
-## M4 — Backlog playback
+## M4 — Backlog playback — IMPLEMENTED
 
 - replay buffered messages after downstream reconnect
-- timestamps/metadata where feasible
-- configurable buffer limits
+- Amiga DateStamp metadata retained per buffered line
+- target summary and timestamp metadata NOTICEs during replay
+- original IRC lines replayed unchanged
+- runtime-configurable per-target buffer limit from 1 to 32 lines
+- failed replay preserves rings not yet completed
+
+Runtime qualification remains separate; see `docs/M4.md`.
 
 ## M5 — ARexx API
 
