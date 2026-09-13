@@ -33,11 +33,16 @@ Runtime qualification remains separate; see `docs/M1.md`.
 
 Runtime qualification remains separate; see `docs/M2.md`.
 
-## M3 — Session/state
+## M3 — Session/state — IMPLEMENTED
 
-- channel and nickname state
-- persistent upstream session while downstream is absent
-- bounded per-target ring buffers
+- current nick state from self NICK events
+- up to 16 joined channels tracked from self JOIN/PART/KICK events
+- upstream session remains active while downstream is absent
+- up to 16 bounded per-target ring buffers
+- up to 32 IRC lines retained per target with overwrite counters
+- private messages keyed by sender nick and channel messages by channel
+
+Runtime qualification remains separate; see `docs/M3.md`.
 
 ## M4 — Backlog playback
 
