@@ -55,12 +55,17 @@ Runtime qualification remains separate; see `docs/M3.md`.
 
 Runtime qualification remains separate; see `docs/M4.md`.
 
-## M5 — ARexx API
+## M5 — ARexx API — IMPLEMENTED
 
-- live `AMBNC` message port
-- STATUS, CONNECT, DISCONNECT, JOIN, PART, MSG, NOTICE, RAW, BUFFER, RELOAD, QUIT
-- event hooks for connect/disconnect/message/channel events
-- example scripts
+- live `AMBNC` Exec/ARexx message port
+- STATUS, CONNECT, DISCONNECT, JOIN, PART, MSG, NOTICE, RAW, BUFFER, RELOAD and QUIT commands
+- ARexx signal multiplexed with IRC sockets through the existing WaitSelect loop
+- DISCONNECT holds upstream offline until CONNECT
+- optional lifecycle, message and channel event hooks under `REXX:AmBNC/`
+- missing hook scripts are ignored cleanly
+- example ON_PRIVMSG hook
+
+Runtime qualification remains separate; see `docs/M5.md`. `RELOAD` is reserved/accepted but is a no-op while configuration remains CLI-only.
 
 ## M6 — Multiple sessions
 
