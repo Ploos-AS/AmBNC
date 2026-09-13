@@ -2,14 +2,15 @@
 #include <stdlib.h>
 
 #include "ambnc.h"
+#include "state.h"
 #include "upstream.h"
 
 #define AMBNC_DEFAULT_LISTEN_PORT 16667
 
 static void usage(const char *program)
 {
-    printf("Usage: %s HOST PORT NICK [USER] [PASS] [LISTEN_PORT]\n", program);
-    puts("Example: AmBNC irc.libera.chat 6667 AmBNC ambnc secret 16667");
+    printf("Usage: %s HOST PORT NICK [USER] [PASS] [LISTEN_PORT] [BACKLOG_LINES]\n", program);
+    puts("Example: AmBNC irc.libera.chat 6667 AmBNC ambnc secret 16667 32");
 }
 
 int ambnc_run(int argc, char **argv)
@@ -17,11 +18,12 @@ int ambnc_run(int argc, char **argv)
     struct ambnc_upstream_config config;
     long port;
     long listen_port = AMBNC_DEFAULT_LISTEN_PORT;
+    long backlog_lines = AMBNC_STATE_RING_LINES_DEFAULT;
 
     puts(AMBNC_NAME " " AMBNC_VERSION);
     puts("ARexx port reserved: " AMBNC_REXX_PORT);
 
-    if (argc < 4 || argc > 7) {
+    if (argc < 4 || argc > 8) {
         usage(argv[0]);
         return 10;
     }
@@ -38,6 +40,13 @@ int ambnc_run(int argc, char **argv)
             return 10;
         }
     }
+    if (argc >= 8) {
+        backlog_lines = strtol(argv[7], 0, 10);
+        if (backlog_lines <= 0 || backlog_lines > AMBNC_STATE_RING_LINES_MAX) {
+            printf("AmBNC: backlog lines must be 1-%u\n", AMBNC_STATE_RING_LINES_MAX);
+            return 10;
+        }
+    }
 
     config.host = argv[1];
     config.port = (unsigned short)port;
@@ -45,6 +54,7 @@ int ambnc_run(int argc, char **argv)
     config.user = argc >= 5 ? argv[4] : argv[3];
     config.pass = argc >= 6 ? argv[5] : 0;
     config.listen_port = (unsigned short)listen_port;
+    config.backlog_lines = (unsigned int)backlog_lines;
 
     return ambnc_upstream_run(&config);
 }
