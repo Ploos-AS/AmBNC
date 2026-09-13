@@ -5,14 +5,21 @@
 #include <proto/dos.h>
 #include <proto/exec.h>
 
+#include "downstream.h"
 #include "irc.h"
 #include "net.h"
 #include "upstream.h"
 
-#define AMBNC_UPSTREAM_RECV_BUFFER 512
+#define AMBNC_RECV_BUFFER 512
 
 struct upstream_line_context {
     int sock;
+    struct ambnc_downstream *downstream;
+};
+
+struct downstream_line_context {
+    int upstream_sock;
+    struct ambnc_downstream *downstream;
 };
 
 static int stop_requested(void)
@@ -20,41 +27,109 @@ static int stop_requested(void)
     return (SetSignal(0, 0) & SIGBREAKF_CTRL_C) != 0;
 }
 
-static void handle_line(const char *line, void *userdata)
+static int command_is(const char *line, const char *command)
+{
+    unsigned int i = 0;
+    while (command[i] != '\0' && line[i] == command[i]) ++i;
+    return command[i] == '\0' && (line[i] == '\0' || line[i] == ' ');
+}
+
+static void handle_upstream_line(const char *line, void *userdata)
 {
     struct upstream_line_context *context = (struct upstream_line_context *)userdata;
 
-    printf("< %s\n", line);
+    printf("U< %s\n", line);
     if (strncmp(line, "PING ", 5) == 0) {
         char response[AMBNC_IRC_LINE_MAX + 1];
         int written = snprintf(response, sizeof(response), "PONG %s", line + 5);
         if (written > 0 && written < (int)sizeof(response)) {
-            printf("> %s\n", response);
+            printf("U> %s\n", response);
             (void)ambnc_irc_send_line(context->sock, response);
         }
+        return;
+    }
+
+    if (context->downstream->client >= 0 &&
+        ambnc_downstream_send_line(context->downstream, line) != 0) {
+        ambnc_downstream_close_client(context->downstream);
     }
 }
 
-static int run_connected(const struct ambnc_upstream_config *config, int sock)
+static void handle_downstream_line(const char *line, void *userdata)
 {
-    struct ambnc_irc_framer framer;
-    struct upstream_line_context line_context;
-    char buffer[AMBNC_UPSTREAM_RECV_BUFFER];
+    struct downstream_line_context *context = (struct downstream_line_context *)userdata;
 
-    ambnc_irc_framer_init(&framer);
-    line_context.sock = sock;
+    printf("D< %s\n", line);
+    if (command_is(line, "PASS") || command_is(line, "NICK") ||
+        command_is(line, "USER")) {
+        return;
+    }
+    if (command_is(line, "QUIT")) {
+        ambnc_downstream_close_client(context->downstream);
+        return;
+    }
+
+    printf("U> %s\n", line);
+    if (ambnc_irc_send_line(context->upstream_sock, line) != 0)
+        ambnc_downstream_close_client(context->downstream);
+}
+
+static int run_connected(const struct ambnc_upstream_config *config,
+                         int sock,
+                         struct ambnc_downstream *downstream)
+{
+    struct ambnc_irc_framer upstream_framer;
+    struct upstream_line_context upstream_context;
+    struct downstream_line_context downstream_context;
+    char buffer[AMBNC_RECV_BUFFER];
+
+    ambnc_irc_framer_init(&upstream_framer);
+    upstream_context.sock = sock;
+    upstream_context.downstream = downstream;
+    downstream_context.upstream_sock = sock;
+    downstream_context.downstream = downstream;
 
     if (ambnc_irc_send_registration(sock, config->nick, config->user, config->pass) != 0)
         return -1;
 
     while (!stop_requested()) {
-        int received = ambnc_net_recv(sock, buffer, sizeof(buffer));
-        if (received <= 0) return -1;
-        ambnc_irc_framer_feed(&framer,
-                              buffer,
-                              (unsigned int)received,
-                              handle_line,
-                              &line_context);
+        int sockets[3];
+        unsigned long signals = 0;
+        unsigned long ready = 0;
+        int rc;
+
+        sockets[0] = sock;
+        sockets[1] = downstream->listener;
+        sockets[2] = downstream->client;
+        rc = ambnc_net_wait_many(sockets, 3, SIGBREAKF_CTRL_C, &signals, &ready);
+        if ((signals & SIGBREAKF_CTRL_C) != 0) return 0;
+        if (rc < 0) return -1;
+
+        if ((ready & 1UL) != 0) {
+            int received = ambnc_net_recv(sock, buffer, sizeof(buffer));
+            if (received <= 0) return -1;
+            ambnc_irc_framer_feed(&upstream_framer,
+                                  buffer,
+                                  (unsigned int)received,
+                                  handle_upstream_line,
+                                  &upstream_context);
+        }
+
+        if ((ready & 2UL) != 0)
+            (void)ambnc_downstream_accept(downstream, config->nick);
+
+        if ((ready & 4UL) != 0 && downstream->client >= 0) {
+            int received = ambnc_net_recv(downstream->client, buffer, sizeof(buffer));
+            if (received <= 0) {
+                ambnc_downstream_close_client(downstream);
+            } else {
+                ambnc_irc_framer_feed(&downstream->framer,
+                                      buffer,
+                                      (unsigned int)received,
+                                      handle_downstream_line,
+                                      &downstream_context);
+            }
+        }
     }
     return 0;
 }
@@ -62,15 +137,26 @@ static int run_connected(const struct ambnc_upstream_config *config, int sock)
 int ambnc_upstream_run(const struct ambnc_upstream_config *config)
 {
     static const unsigned int backoff_seconds[] = { 1, 2, 4, 8, 16, 30 };
+    struct ambnc_downstream downstream;
     unsigned int backoff_index = 0;
 
-    if (config == 0 || config->host == 0 || config->nick == 0 || config->user == 0)
+    if (config == 0 || config->host == 0 || config->nick == 0 || config->user == 0 ||
+        config->listen_port == 0)
         return 10;
 
     if (ambnc_net_open() != 0) {
         puts("AmBNC: cannot open bsdsocket.library");
         return 20;
     }
+
+    ambnc_downstream_init(&downstream);
+    if (ambnc_downstream_listen(&downstream, config->listen_port) != 0) {
+        printf("AmBNC: cannot listen on TCP port %u\n", (unsigned int)config->listen_port);
+        ambnc_net_close();
+        return 20;
+    }
+    printf("AmBNC: downstream listener on TCP port %u\n",
+           (unsigned int)config->listen_port);
 
     while (!stop_requested()) {
         int sock;
@@ -81,8 +167,13 @@ int ambnc_upstream_run(const struct ambnc_upstream_config *config)
         if (sock >= 0) {
             puts("AmBNC: upstream connected");
             backoff_index = 0;
-            (void)run_connected(config, sock);
+            (void)run_connected(config, sock, &downstream);
             ambnc_net_close_socket(sock);
+            if (downstream.client >= 0) {
+                (void)ambnc_downstream_send_line(&downstream,
+                                                  ":AmBNC NOTICE * :Upstream disconnected");
+                ambnc_downstream_close_client(&downstream);
+            }
             if (stop_requested()) break;
             puts("AmBNC: upstream disconnected");
         } else {
@@ -98,6 +189,7 @@ int ambnc_upstream_run(const struct ambnc_upstream_config *config)
         }
     }
 
+    ambnc_downstream_close(&downstream);
     ambnc_net_close();
     puts("AmBNC: stopped");
     return 0;
