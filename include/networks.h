@@ -35,4 +35,15 @@ void ambnc_networks_init(struct ambnc_networks_config *config);
 int ambnc_networks_load(struct ambnc_networks_config *config, const char *path,
                         char *error, unsigned int error_size);
 
+int ambnc_m7_send_registration(int sock,
+                               const char *nick,
+                               const char *user,
+                               const char *pass);
+void ambnc_m7_state_observe_line(struct ambnc_session_state *state,
+                                 const char *line,
+                                 int downstream_attached);
+
+#define ambnc_irc_send_registration ambnc_m7_send_registration
+#define ambnc_state_observe_line ambnc_m7_state_observe_line
+
 #endif
