@@ -4,6 +4,21 @@
 #include <ctype.h>
 
 #include "networks.h"
+#undef ambnc_irc_send_registration
+#undef ambnc_state_observe_line
+
+#include "irc.h"
+#include "modernirc.h"
+#include "modernirc.c"
+
+struct ambnc_m7_slot {
+    int sock;
+    const struct ambnc_network_config *config;
+    struct ambnc_modernirc modern;
+};
+
+static const struct ambnc_networks_config *active_config;
+static struct ambnc_m7_slot m7_slots[AMBNC_NETWORKS_MAX];
 
 static char *trim(char *s)
 {
@@ -60,9 +75,39 @@ static int set_bool(int *out, const char *value)
     return -1;
 }
 
+static const struct ambnc_network_config *find_config(const char *nick,
+                                                       const char *user)
+{
+    unsigned int i;
+    if (active_config == 0) return 0;
+    for (i = 0; i < active_config->count; ++i) {
+        const struct ambnc_network_config *n = &active_config->networks[i];
+        if (same_ci(n->nick, nick) && same_ci(n->user, user)) return n;
+    }
+    return 0;
+}
+
+static struct ambnc_m7_slot *slot_for_config(const struct ambnc_network_config *config)
+{
+    unsigned int i;
+    for (i = 0; i < AMBNC_NETWORKS_MAX; ++i)
+        if (m7_slots[i].config == config) return &m7_slots[i];
+    for (i = 0; i < AMBNC_NETWORKS_MAX; ++i) {
+        if (m7_slots[i].config == 0) {
+            m7_slots[i].config = config;
+            m7_slots[i].sock = -1;
+            ambnc_modernirc_init(&m7_slots[i].modern);
+            return &m7_slots[i];
+        }
+    }
+    return 0;
+}
+
 void ambnc_networks_init(struct ambnc_networks_config *config)
 {
     memset(config, 0, sizeof(*config));
+    memset(m7_slots, 0, sizeof(m7_slots));
+    active_config = config;
 }
 
 int ambnc_networks_load(struct ambnc_networks_config *config, const char *path,
@@ -173,4 +218,46 @@ bad_line:
     fclose(fp);
     snprintf(error, error_size, "invalid config line %u", lineno);
     return -1;
+}
+
+int ambnc_m7_send_registration(int sock,
+                               const char *nick,
+                               const char *user,
+                               const char *pass)
+{
+    const struct ambnc_network_config *config = find_config(nick, user);
+    struct ambnc_m7_slot *slot;
+
+    if (config == 0) return ambnc_irc_send_registration(sock, nick, user, pass);
+    slot = slot_for_config(config);
+    if (slot == 0) return -1;
+    slot->sock = sock;
+
+    if (config->tls_mode == AMBNC_TLS_PROXY)
+        printf("AmBNC[%s]: TLS expected from external proxy/terminator\n", config->name);
+
+    if (ambnc_modernirc_start(sock, config, &slot->modern) != 0) return -1;
+    return ambnc_irc_send_registration(sock, nick, user, pass);
+}
+
+void ambnc_m7_state_observe_line(struct ambnc_session_state *state,
+                                 const char *line,
+                                 int downstream_attached)
+{
+    unsigned int i;
+    if (active_config != 0) {
+        for (i = 0; i < active_config->count; ++i) {
+            const struct ambnc_network_config *config = &active_config->networks[i];
+            struct ambnc_m7_slot *slot;
+            if (!same_ci(state->nick, config->nick)) continue;
+            slot = slot_for_config(config);
+            if (slot != 0 && slot->sock >= 0) {
+                int rc = ambnc_modernirc_handle_line(slot->sock, config, &slot->modern, line);
+                if (rc < 0)
+                    printf("AmBNC[%s]: CAP/SASL negotiation failed\n", config->name);
+            }
+            break;
+        }
+    }
+    ambnc_state_observe_line(state, line, downstream_attached);
 }
