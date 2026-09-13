@@ -20,15 +20,17 @@ src/%.o: src/%.c $(HEADERS)
 
 check:
 	@grep -q 'AMBNC_REXX_PORT "AMBNC"' include/ambnc.h
-	@grep -q 'AMBNC_VERSION "0.3.0-m3"' include/ambnc.h
+	@grep -q 'AMBNC_VERSION "0.4.0-m4"' include/ambnc.h
 	@grep -q -- '-m68000' Makefile
 	@grep -q -- '-mcrt=nix20' Makefile
-	@grep -q 'AMBNC_STATE_CHANNELS_MAX 16' include/state.h
-	@grep -q 'AMBNC_STATE_RING_LINES 32' include/state.h
-	@grep -q 'ambnc_state_observe_line' src/upstream.c
-	@grep -q 'PRIVMSG' src/state.c
-	@grep -q 'NOTICE' src/state.c
-	@echo "M3 static checks: PASS"
+	@grep -q 'AMBNC_STATE_RING_LINES_MAX 32' include/state.h
+	@grep -q 'ring_lines_limit' include/state.h
+	@grep -q 'DateStamp' src/state.c
+	@grep -q 'ambnc_state_replay' src/state.c
+	@grep -q 'Backlog target=' src/state.c
+	@grep -q 'BACKLOG_LINES' src/main.c
+	@grep -q 'ambnc_state_replay' src/upstream.c
+	@echo "M4 static checks: PASS"
 
 clean:
 	rm -f $(OBJECTS) $(TARGET)
