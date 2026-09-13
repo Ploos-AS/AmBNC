@@ -36,6 +36,11 @@ static int command_is(const char *line, const char *command)
     return command[i] == '\0' && (line[i] == '\0' || line[i] == ' ');
 }
 
+static int replay_send_line(void *userdata, const char *line)
+{
+    return ambnc_downstream_send_line((struct ambnc_downstream *)userdata, line);
+}
+
 static void handle_upstream_line(const char *line, void *userdata)
 {
     struct upstream_line_context *context = (struct upstream_line_context *)userdata;
@@ -88,7 +93,7 @@ static int run_connected(const struct ambnc_upstream_config *config,
     char buffer[AMBNC_RECV_BUFFER];
 
     ambnc_irc_framer_init(&upstream_framer);
-    ambnc_state_init(state, config->nick);
+    ambnc_state_init(state, config->nick, config->backlog_lines);
     upstream_context.sock = sock;
     upstream_context.downstream = downstream;
     upstream_context.state = state;
@@ -121,8 +126,15 @@ static int run_connected(const struct ambnc_upstream_config *config,
                                   &upstream_context);
         }
 
-        if ((ready & 2UL) != 0)
-            (void)ambnc_downstream_accept(downstream, state->nick);
+        if ((ready & 2UL) != 0) {
+            int accepted = ambnc_downstream_accept(downstream, state->nick);
+            if (accepted == 0) {
+                if (ambnc_state_replay(state, replay_send_line, downstream) != 0) {
+                    puts("AmBNC: backlog replay failed; detaching downstream");
+                    ambnc_downstream_close_client(downstream);
+                }
+            }
+        }
 
         if ((ready & 4UL) != 0 && downstream->client >= 0) {
             int received = ambnc_net_recv(downstream->client, buffer, sizeof(buffer));
@@ -148,7 +160,8 @@ int ambnc_upstream_run(const struct ambnc_upstream_config *config)
     unsigned int backoff_index = 0;
 
     if (config == 0 || config->host == 0 || config->nick == 0 || config->user == 0 ||
-        config->listen_port == 0)
+        config->listen_port == 0 || config->backlog_lines == 0 ||
+        config->backlog_lines > AMBNC_STATE_RING_LINES_MAX)
         return 10;
 
     if (ambnc_net_open() != 0) {
@@ -162,8 +175,9 @@ int ambnc_upstream_run(const struct ambnc_upstream_config *config)
         ambnc_net_close();
         return 20;
     }
-    printf("AmBNC: downstream listener on TCP port %u\n",
-           (unsigned int)config->listen_port);
+    printf("AmBNC: downstream listener on TCP port %u, backlog %u line(s)/target\n",
+           (unsigned int)config->listen_port,
+           config->backlog_lines);
 
     while (!stop_requested()) {
         int sock;
