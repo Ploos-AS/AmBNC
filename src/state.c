@@ -7,7 +7,8 @@ static int same_ci(const char *a, const char *b)
 {
     while (*a != '\0' && *b != '\0') {
         if (tolower((unsigned char)*a) != tolower((unsigned char)*b)) return 0;
-        ++a; ++b;
+        ++a;
+        ++b;
     }
     return *a == '\0' && *b == '\0';
 }
@@ -21,6 +22,23 @@ static void copy_bounded(char *dst, unsigned int size, const char *src)
         ++i;
     }
     dst[i] = '\0';
+}
+
+static int prefix_nick(const char *line, char *out, unsigned int size)
+{
+    unsigned int n = 0;
+    const char *p;
+    if (line == 0 || line[0] != ':') {
+        if (size != 0) out[0] = '\0';
+        return 0;
+    }
+    p = line + 1;
+    while (*p != '\0' && *p != '!' && *p != ' ') {
+        if (n + 1 < size) out[n++] = *p;
+        ++p;
+    }
+    if (size != 0) out[n] = '\0';
+    return n != 0;
 }
 
 static const char *skip_prefix(const char *line)
@@ -47,17 +65,22 @@ static int parse_command(const char *line, char *command, unsigned int size, con
     return n != 0;
 }
 
-static int first_param(const char *params, char *out, unsigned int size)
+static const char *take_param(const char *params, char *out, unsigned int size)
 {
     unsigned int n = 0;
-    if (params == 0) return 0;
+    if (params == 0) {
+        if (size != 0) out[0] = '\0';
+        return 0;
+    }
+    while (*params == ' ') ++params;
     if (*params == ':') ++params;
     while (*params != '\0' && *params != ' ') {
         if (n + 1 < size) out[n++] = *params;
         ++params;
     }
     if (size != 0) out[n] = '\0';
-    return n != 0;
+    while (*params == ' ') ++params;
+    return params;
 }
 
 static void add_channel(struct ambnc_session_state *state, const char *channel)
@@ -120,30 +143,49 @@ void ambnc_state_observe_line(struct ambnc_session_state *state,
                               int downstream_attached)
 {
     char command[16];
+    char sender[AMBNC_STATE_NICK_MAX + 1];
     char target[AMBNC_STATE_TARGET_MAX + 1];
     const char *params;
 
     if (state == 0 || line == 0) return;
+    sender[0] = '\0';
+    (void)prefix_nick(line, sender, sizeof(sender));
     if (!parse_command(line, command, sizeof(command), &params)) return;
 
     if (strcmp(command, "NICK") == 0) {
         char nick[AMBNC_STATE_NICK_MAX + 1];
-        if (first_param(params, nick, sizeof(nick)))
-            copy_bounded(state->nick, sizeof(state->nick), nick);
+        if (same_ci(sender, state->nick)) {
+            (void)take_param(params, nick, sizeof(nick));
+            if (nick[0] != '\0') copy_bounded(state->nick, sizeof(state->nick), nick);
+        }
         return;
     }
 
     if (strcmp(command, "JOIN") == 0) {
-        if (first_param(params, target, sizeof(target))) add_channel(state, target);
-    } else if (strcmp(command, "PART") == 0 || strcmp(command, "KICK") == 0) {
-        if (first_param(params, target, sizeof(target))) remove_channel(state, target);
+        if (same_ci(sender, state->nick)) {
+            (void)take_param(params, target, sizeof(target));
+            if (target[0] != '\0') add_channel(state, target);
+        }
+    } else if (strcmp(command, "PART") == 0) {
+        if (same_ci(sender, state->nick)) {
+            (void)take_param(params, target, sizeof(target));
+            if (target[0] != '\0') remove_channel(state, target);
+        }
+    } else if (strcmp(command, "KICK") == 0) {
+        char victim[AMBNC_STATE_NICK_MAX + 1];
+        params = take_param(params, target, sizeof(target));
+        (void)take_param(params, victim, sizeof(victim));
+        if (target[0] != '\0' && same_ci(victim, state->nick)) remove_channel(state, target);
     }
 
     if (!downstream_attached &&
         (strcmp(command, "PRIVMSG") == 0 || strcmp(command, "NOTICE") == 0)) {
-        if (first_param(params, target, sizeof(target))) {
-            struct ambnc_target_ring *ring = ring_for(state, target);
-            if (ring != 0) ring_push(ring, line);
-        }
+        struct ambnc_target_ring *ring;
+        (void)take_param(params, target, sizeof(target));
+        if (target[0] == '\0') return;
+        if (same_ci(target, state->nick) && sender[0] != '\0')
+            copy_bounded(target, sizeof(target), sender);
+        ring = ring_for(state, target);
+        if (ring != 0) ring_push(ring, line);
     }
 }
