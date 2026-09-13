@@ -2,6 +2,8 @@
 #include "modernirc.h"
 #include "state.h"
 
+#include "modernirc.c"
+
 static int ambnc_m7_send_registration(int sock,
                                       const char *nick,
                                       const char *user,
@@ -10,11 +12,13 @@ static void ambnc_m7_observe_line(struct ambnc_session_state *state,
                                   const char *line,
                                   int downstream_attached);
 
+#define ambnc_multinet_run ambnc_multinet_run_m7
 #define ambnc_irc_send_registration ambnc_m7_send_registration
 #define ambnc_state_observe_line ambnc_m7_observe_line
 #include "multinet.c"
 #undef ambnc_state_observe_line
 #undef ambnc_irc_send_registration
+#undef ambnc_multinet_run
 
 static struct ambnc_modernirc modern_states[AMBNC_NETWORKS_MAX];
 
