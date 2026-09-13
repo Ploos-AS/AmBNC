@@ -7,6 +7,7 @@ struct ambnc_upstream_config {
     const char *nick;
     const char *user;
     const char *pass;
+    unsigned short listen_port;
 };
 
 int ambnc_upstream_run(const struct ambnc_upstream_config *config);
