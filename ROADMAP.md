@@ -80,11 +80,17 @@ Runtime qualification remains separate; see `docs/M5.md`. `RELOAD` is reserved/a
 
 Runtime qualification remains separate; see `docs/M6.md`. Explicit per-network ARexx send routing remains a hardening item; legacy send commands use the first connected network.
 
-## M7 — Modern IRC extensions
+## M7 — Modern IRC extensions — IMPLEMENTED
 
-- CAP negotiation
-- SASL where feasible
-- TLS strategy appropriate for classic Amiga hardware
+- per-network CAP negotiation with IRCv3 `CAP LS 302`
+- optional SASL PLAIN using configured USER/PASS
+- bounded Base64 SASL payload generation
+- SASL success/failure handling and clean CAP termination
+- per-network CAP/SASL negotiation state layered over the M6 runtime
+- `TLS_MODE=PLAIN|PROXY` strategy for classic hardware
+- external TLS termination recommended for 68000 systems; native AmiSSL/TLS deferred
+
+Runtime qualification remains separate; see `docs/M7.md`.
 
 ## M8 — Qualification and release
 
