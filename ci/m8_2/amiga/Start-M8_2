@@ -1,0 +1,6 @@
+; Keep this Shell visible. Do not redirect it: screenshots are runtime evidence.
+FailAt 20
+CD AMBNCQ:
+Echo "Starting visible M8.2 run. Use the second Shell for RX and client tests."
+AmBNC -c AMBNCQ:AmBNC-M8_2.cfg
+Echo "AmBNC exited with RC $RC"

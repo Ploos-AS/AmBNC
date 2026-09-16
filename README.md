@@ -42,3 +42,21 @@ make CC=/opt/amiga/bin/m68k-amigaos-gcc
 5. Make reconnect and session persistence core behavior of the bouncer.
 
 See `ROADMAP.md` and `docs/ARCHITECTURE.md` for the planned progression.
+
+## Local AmigaOS qualification
+
+M8.2 provides a visible FS-UAE/real-Amiga qualification bundle without
+redistributing AmigaOS or Kickstart material:
+
+```sh
+make check
+make amiga
+make qualify-m8_2 \
+  M8_2_HOST=192.168.1.10 \
+  M8_2_SYSTEM_DIR=/licensed/amigaos/system \
+  M8_2_KICKSTART_FILE=/licensed/kickstart.rom
+```
+
+The command prepares everything it can but deliberately leaves the milestone
+PENDING until the visible runtime checklist is completed. See
+`docs/M8_2_QUALIFICATION.md` for the exact procedure and evidence requirements.

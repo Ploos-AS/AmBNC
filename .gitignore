@@ -1,0 +1,12 @@
+/AmBNC
+/src/*.o
+/build/
+/local/
+/.fs-uae/
+*.adf
+*.ADF
+*.hdf
+*.HDF
+*.rom
+*.ROM
+rom.key

@@ -104,7 +104,7 @@ Runtime qualification remains separate; see `docs/M7.md`.
 
 See `docs/M8_1.md`.
 
-### M8.2 — Local AmigaOS runtime qualification — NEXT
+### M8.2 — Local AmigaOS runtime qualification — PENDING
 
 - actual AmigaOS 2.04+ / Workbench runtime
 - `bsdsocket.library` enabled
@@ -113,6 +113,11 @@ See `docs/M8_1.md`.
 - ARexx command and hook qualification
 - multi-network qualification
 - CAP/SASL and TLS-proxy qualification
+- reproducible visible FS-UAE preparation, deterministic IRC/SASL/TLS-proxy
+  fixture, AmigaDOS/ARexx scripts and evidence checklist implemented
+
+No visible AmigaOS M8.2 run has been recorded yet. See
+`docs/M8_2_QUALIFICATION.md`; all runtime rows remain PENDING.
 
 ### M8.3 — Release packaging
 

@@ -1,0 +1,19 @@
+; Run once from an AmigaShell after AMBNCQ: appears.
+FailAt 20
+Protect AMBNCQ:AmBNC +E
+If NOT EXISTS REXX:AmBNC
+  MakeDir REXX:AmBNC
+EndIf
+Copy AMBNCQ:rexx/hooks/Hook-M8_2.rexx REXX:AmBNC/ON_CONNECT.rexx
+Copy AMBNCQ:rexx/hooks/Hook-M8_2.rexx REXX:AmBNC/ON_DISCONNECT.rexx
+Copy AMBNCQ:rexx/hooks/Hook-M8_2.rexx REXX:AmBNC/ON_PRIVMSG.rexx
+Copy AMBNCQ:rexx/hooks/Hook-M8_2.rexx REXX:AmBNC/ON_NOTICE.rexx
+Copy AMBNCQ:rexx/hooks/Hook-M8_2.rexx REXX:AmBNC/ON_JOIN.rexx
+Copy AMBNCQ:rexx/hooks/Hook-M8_2.rexx REXX:AmBNC/ON_PART.rexx
+Copy AMBNCQ:rexx/hooks/Hook-M8_2.rexx REXX:AmBNC/ON_QUIT.rexx
+Copy AMBNCQ:rexx/hooks/Hook-M8_2.rexx REXX:AmBNC/ON_KICK.rexx
+Copy AMBNCQ:rexx/hooks/Hook-M8_2.rexx REXX:AmBNC/ON_TOPIC.rexx
+Copy AMBNCQ:rexx/hooks/Hook-M8_2.rexx REXX:AmBNC/ON_NICK.rexx
+Delete AMBNCQ:evidence/hooks.log QUIET
+Echo "M8.2 hooks installed under REXX:AmBNC"
+Echo "Open a second Shell, then run AMBNCQ:Start-M8_2 here."

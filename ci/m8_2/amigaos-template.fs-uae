@@ -1,0 +1,11 @@
+[fs-uae]
+amiga_model = A1200
+kickstart_file = @KICKSTART_FILE@
+hard_drive_0 = @SYSTEM_DIR@
+hard_drive_1 = @QUALIFICATION_DIR@
+hard_drive_1_label = AMBNCQ
+hard_drive_1_read_only = 0
+bsdsocket_library = 1
+fullscreen = 0
+window_width = 752
+window_height = 600
