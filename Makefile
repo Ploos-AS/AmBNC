@@ -13,7 +13,7 @@ M8_2_HOST ?= HOST_IP_HERE
 M8_2_SYSTEM_DIR ?= SYSTEM_DIR_HERE
 M8_2_KICKSTART_FILE ?= KICKSTART_FILE_HERE
 
-.PHONY: all clean check amiga qualify-m8_1 qualify-m8_2 review-m8_2-evidence
+.PHONY: all clean check check-pbmp amiga qualify-m8_1 qualify-m8_2 review-m8_2-evidence
 
 all: $(TARGET)
 
@@ -40,6 +40,11 @@ check:
 	@grep -q '"endpoint.info"' src/pbmp.c
 	@bash ci/m8_2/check-harness.sh
 	@echo "M7 static checks: PASS"
+
+check-pbmp:
+	@mkdir -p build/tests
+	@cc -std=c89 -Wall -Wextra -Werror -Iinclude tests/pbmp_adapter_test.c src/pbmp.c -o build/tests/pbmp_adapter_test
+	@build/tests/pbmp_adapter_test
 
 amiga:
 	@bash ci/fs-uae/build-native.sh "$(AMIGA_OUT)"
