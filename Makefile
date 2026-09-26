@@ -38,6 +38,7 @@ check:
 	@grep -q 'ambnc_m7_send_registration' src/networks.c
 	@grep -q 'AMBNC_PBMP_ENDPOINT_KIND "bouncer"' include/pbmp.h
 	@grep -q '"endpoint.info"' src/pbmp.c
+	@grep -q '"networks.list"' src/pbmp.c
 	@bash ci/m8_2/check-harness.sh
 	@echo "M7 static checks: PASS"
 
