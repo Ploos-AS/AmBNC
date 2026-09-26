@@ -57,13 +57,15 @@ Each configured network currently exposes:
 
 - `id`: `network-N`, derived from the configuration order.
 - `name`: the configured network section name.
-- `state`: currently `configured`.
+- `state`: the current AmBNC runtime state: `configured`, `connecting`,
+  `connected`, or `disconnected`.
 
 The response intentionally does not expose upstream hosts, ports, nick/user
-credentials, passwords, SASL secrets, or other connection secrets. PBMP
-consumers MUST NOT infer that a `configured` network is currently connected;
-runtime connection-state reporting may be added separately in a later
-capability revision.
+credentials, passwords, SASL secrets, or other connection secrets. The state is published by AmBNC's multinet runtime rather than inferred by
+the PBMP adapter. `configured` means the network exists in configuration but
+has not yet entered a connection attempt; `connecting` marks an active
+attempt, `connected` means an upstream socket and IRC registration path have
+been established, and `disconnected` means the upstream is down/retrying.
 
 When no multinet configuration has been bound, `networks.list` returns an
 empty list rather than making PBMP a prerequisite for AmBNC startup.
