@@ -74,6 +74,18 @@ int main(void)
         "\"method\":\"pbmp.info\",\"params\":{}}",
         "", 0);
     failed |= check_raw(
+        "{\"pbmp\":1,\"type\":\"request\",\"id\":\"unicode-\\u00f8\","
+        "\"method\":\"pbmp.info\",\"params\":{}}",
+        "\"id\":\"unicode-ø\"", 1);
+    failed |= check_raw(
+        "{\"pbmp\":1,\"type\":\"request\",\"id\":\"emoji-\\ud83d\\ude80\","
+        "\"method\":\"pbmp.info\",\"params\":{}}",
+        "\"id\":\"emoji-🚀\"", 1);
+    failed |= check_raw(
+        "{\"pbmp\":1,\"type\":\"request\",\"id\":\"bad-\\ud83d\","
+        "\"method\":\"pbmp.info\",\"params\":{}}",
+        "", 0);
+    failed |= check_raw(
         "{\"pbmp\":2,\"type\":\"request\",\"id\":\"bad-version\","
         "\"method\":\"pbmp.info\",\"params\":{}}",
         "", 0);
