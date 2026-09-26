@@ -138,6 +138,14 @@ int ambnc_pbmp_handle(const char *request, char *response, size_t response_size)
             "\"result\":{\"endpoint\":{\"id\":\"%s\",\"kind\":\"%s\","
             "\"implementation\":{\"name\":\"%s\",\"version\":\"%s\"},\"state\":\"running\"}}}\n",
             escaped_id, AMBNC_PBMP_ENDPOINT_ID, AMBNC_PBMP_ENDPOINT_KIND, AMBNC_NAME, AMBNC_VERSION);
+static const char *runtime_state_name(int state)
+{
+    if (state == AMBNC_NETWORK_RUNTIME_CONNECTING) return "connecting";
+    if (state == AMBNC_NETWORK_RUNTIME_CONNECTED) return "connected";
+    if (state == AMBNC_NETWORK_RUNTIME_DISCONNECTED) return "disconnected";
+    return "configured";
+}
+
     } else if (strcmp(method, "networks.list") == 0) {
         size_t used;
         unsigned int i;
@@ -154,8 +162,9 @@ int ambnc_pbmp_handle(const char *request, char *response, size_t response_size)
                 if (json_escape(n->name, name, sizeof(name)) != 0)
                     return -1;
                 written = snprintf(response + used, response_size - used,
-                    "%s{\"id\":\"network-%u\",\"name\":\"%s\",\"state\":\"configured\"}",
-                    i ? "," : "", i + 1U, name);
+                    "%s{\"id\":\"network-%u\",\"name\":\"%s\",\"state\":\"%s\"}",
+                    i ? "," : "", i + 1U, name,
+                    runtime_state_name(ambnc_network_runtime_get(i)));
                 if (written < 0 || (size_t)written >= response_size - used)
                     return -1;
                 used += (size_t)written;
