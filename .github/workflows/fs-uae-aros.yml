@@ -24,6 +24,9 @@ jobs:
       - name: Static checks
         run: make check
 
+      - name: PBMP Endpoint M0 adapter smoke test
+        run: make check-pbmp
+
       - name: Gate 1 - native Bebbo AmBNC build
         run: bash ci/fs-uae/build-native.sh
 
