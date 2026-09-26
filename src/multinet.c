@@ -107,6 +107,7 @@ static unsigned int runtime_index(const struct network_runtime *runtime)
 static void schedule_reconnect(struct network_runtime *runtime)
 {
     runtime->retry_seconds = reconnect_backoff[runtime->backoff_index];
+    ambnc_network_runtime_set_retry(runtime_index(runtime), runtime->retry_seconds);
     if (runtime->backoff_index + 1U <
         sizeof(reconnect_backoff) / sizeof(reconnect_backoff[0]))
         ++runtime->backoff_index;
@@ -147,6 +148,7 @@ static int connect_runtime(struct network_runtime *runtime)
     runtime->upstream = sock;
     runtime->backoff_index = 0;
     runtime->retry_seconds = 0;
+    ambnc_network_runtime_set_retry(runtime_index(runtime), 0);
     ambnc_irc_framer_init(&runtime->upstream_framer);
     ambnc_state_init(&runtime->state,
                      runtime->config->nick,
@@ -376,7 +378,10 @@ int ambnc_multinet_run(const struct ambnc_networks_config *config)
         if (!paused) {
             for (i = 0; i < config->count; ++i) {
                 if (runtimes[i].upstream >= 0) continue;
-                if (runtimes[i].retry_seconds > 0) --runtimes[i].retry_seconds;
+                if (runtimes[i].retry_seconds > 0) {
+                    --runtimes[i].retry_seconds;
+                    ambnc_network_runtime_set_retry(i, runtimes[i].retry_seconds);
+                }
                 if (runtimes[i].retry_seconds == 0) (void)connect_runtime(&runtimes[i]);
             }
         }
