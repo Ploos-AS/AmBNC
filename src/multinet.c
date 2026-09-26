@@ -99,8 +99,14 @@ static void hook_lifecycle(const struct network_runtime *runtime,
         ambnc_rexx_emit_lifecycle(event_name, detail);
 }
 
+static unsigned int runtime_index(const struct network_runtime *runtime)
+{
+    return (unsigned int)(runtime - runtimes);
+}
+
 static void schedule_reconnect(struct network_runtime *runtime)
 {
+    ambnc_network_runtime_set(runtime_index(runtime), AMBNC_NETWORK_RUNTIME_DISCONNECTED);
     runtime->retry_seconds = reconnect_backoff[runtime->backoff_index];
     if (runtime->backoff_index + 1U <
         sizeof(reconnect_backoff) / sizeof(reconnect_backoff[0]))
@@ -125,6 +131,7 @@ static void disconnect_runtime(struct network_runtime *runtime, int schedule)
 static int connect_runtime(struct network_runtime *runtime)
 {
     int sock;
+    ambnc_network_runtime_set(runtime_index(runtime), AMBNC_NETWORK_RUNTIME_CONNECTING);
     printf("AmBNC[%s]: connecting %s:%u\n",
            runtime->config->name,
            runtime->config->host,
@@ -155,6 +162,7 @@ static int connect_runtime(struct network_runtime *runtime)
         return -1;
     }
 
+    ambnc_network_runtime_set(runtime_index(runtime), AMBNC_NETWORK_RUNTIME_CONNECTED);
     printf("AmBNC[%s]: upstream connected\n", runtime->config->name);
     hook_lifecycle(runtime, "ON_CONNECT");
     return 0;
@@ -210,6 +218,7 @@ static int init_runtime(struct network_runtime *runtime,
     runtime->upstream = -1;
     runtime->backoff_index = 0;
     runtime->retry_seconds = 0;
+    ambnc_network_runtime_set(runtime_index(runtime), AMBNC_NETWORK_RUNTIME_CONFIGURED);
     ambnc_downstream_init(&runtime->downstream);
     ambnc_state_init(&runtime->state, config->nick, config->backlog_lines);
     ambnc_irc_framer_init(&runtime->upstream_framer);
