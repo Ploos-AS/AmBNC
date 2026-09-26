@@ -4,7 +4,7 @@ endif
 CFLAGS ?= -Os -Wall -Wextra -Werror -m68000 -Iinclude -DAMBNC_WITH_PBMP
 LDFLAGS ?= -mcrt=nix20
 TARGET := AmBNC
-SOURCES := src/main.c src/net.c src/irc.c src/downstream.c src/state.c src/rexx.c src/rexx_events.c src/networks.c src/multinet.c src/upstream.c src/pbmp.c
+SOURCES := src/main.c src/net.c src/irc.c src/downstream.c src/state.c src/rexx.c src/rexx_events.c src/networks.c src/network_runtime.c src/multinet.c src/upstream.c src/pbmp.c
 OBJECTS := $(SOURCES:.c=.o)
 HEADERS := include/ambnc.h include/net.h include/irc.h include/downstream.h include/state.h include/rexx.h include/rexx_events.h include/networks.h include/multinet.h include/upstream.h include/modernirc.h include/pbmp.h
 AMIGA_OUT ?= build/fs-uae/native
@@ -44,7 +44,7 @@ check:
 
 check-pbmp:
 	@mkdir -p build/tests
-	@cc -std=c99 -Wall -Wextra -Werror -Iinclude tests/pbmp_adapter_test.c src/pbmp.c -o build/tests/pbmp_adapter_test
+	@cc -std=c99 -Wall -Wextra -Werror -Iinclude tests/pbmp_adapter_test.c src/pbmp.c src/network_runtime.c -o build/tests/pbmp_adapter_test
 	@build/tests/pbmp_adapter_test
 
 amiga:
