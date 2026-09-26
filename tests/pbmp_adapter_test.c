@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "pbmp.h"
+#include "networks.h"
 
 static int check(const char *method, const char *needle)
 {
@@ -41,10 +42,15 @@ static int check_raw(const char *request, const char *needle, int expect_success
 int main(void)
 {
     int failed = 0;
+    struct ambnc_networks_config networks;
+
+    memset(&networks, 0, sizeof(networks));
 
     failed |= check("pbmp.info", "\"version\":1");
     failed |= check("capabilities.list", "\"endpoint.info\"");
+    failed |= check("capabilities.list", "\"networks.list\"");
     failed |= check("endpoint.info", "\"kind\":\"bouncer\"");
+    failed |= check("networks.list", "\"networks\":[]");
     failed |= check("unsupported.method", "\"code\":\"not_supported\"");
     failed |= check_raw(
         "{ \"pbmp\" : 1, \"type\" : \"request\", \"id\" : \"spaced-1\", "
@@ -62,6 +68,26 @@ int main(void)
         "{\"pbmp\":1,\"type\":\"response\",\"id\":\"bad-type\","
         "\"method\":\"pbmp.info\",\"params\":{}}",
         "", 0);
+
+    networks.count = 2;
+    strcpy(networks.networks[0].name, "Libera");
+    strcpy(networks.networks[0].pass, "secret-one");
+    strcpy(networks.networks[1].name, "OFTC");
+    strcpy(networks.networks[1].pass, "secret-two");
+    ambnc_pbmp_set_networks(&networks);
+    failed |= check("networks.list", "\"id\":\"network-1\",\"name\":\"Libera\",\"state\":\"configured\"");
+    failed |= check("networks.list", "\"id\":\"network-2\",\"name\":\"OFTC\",\"state\":\"configured\"");
+    {
+        char response[1024];
+        const char *request =
+            "{\"pbmp\":1,\"type\":\"request\",\"id\":\"secret-check\","
+            "\"method\":\"networks.list\",\"params\":{}}";
+        if (ambnc_pbmp_handle(request, response, sizeof(response)) < 0 ||
+            strstr(response, "secret-one") || strstr(response, "secret-two")) {
+            fprintf(stderr, "networks.list exposed a secret or failed\n");
+            failed = 1;
+        }
+    }
 
     if (failed)
         return 1;
