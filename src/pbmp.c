@@ -140,33 +140,83 @@ static int unique_top_level_key(const char *json, const char *key)
     return matches == 1;
 }
 
+static int hex4(const char *p, unsigned long *value)
+{
+    unsigned int i;
+    unsigned long v = 0;
+    for (i = 0; i < 4; ++i) {
+        unsigned char ch = (unsigned char)p[i];
+        v <<= 4;
+        if (ch >= '0' && ch <= '9') v |= ch - '0';
+        else if (ch >= 'a' && ch <= 'f') v |= ch - 'a' + 10;
+        else if (ch >= 'A' && ch <= 'F') v |= ch - 'A' + 10;
+        else return -1;
+    }
+    *value = v;
+    return 0;
+}
+
+static int append_utf8(unsigned long cp, char *out, size_t out_size, size_t *n)
+{
+    unsigned int need;
+    if (cp <= 0x7fUL) need = 1;
+    else if (cp <= 0x7ffUL) need = 2;
+    else if (cp <= 0xffffUL) need = 3;
+    else if (cp <= 0x10ffffUL) need = 4;
+    else return -1;
+    if (*n + need >= out_size) return -1;
+    if (need == 1) out[(*n)++] = (char)cp;
+    else if (need == 2) {
+        out[(*n)++] = (char)(0xc0UL | (cp >> 6));
+        out[(*n)++] = (char)(0x80UL | (cp & 0x3fUL));
+    } else if (need == 3) {
+        out[(*n)++] = (char)(0xe0UL | (cp >> 12));
+        out[(*n)++] = (char)(0x80UL | ((cp >> 6) & 0x3fUL));
+        out[(*n)++] = (char)(0x80UL | (cp & 0x3fUL));
+    } else {
+        out[(*n)++] = (char)(0xf0UL | (cp >> 18));
+        out[(*n)++] = (char)(0x80UL | ((cp >> 12) & 0x3fUL));
+        out[(*n)++] = (char)(0x80UL | ((cp >> 6) & 0x3fUL));
+        out[(*n)++] = (char)(0x80UL | (cp & 0x3fUL));
+    }
+    return 0;
+}
+
 static int string_value(const char *json, const char *key, char *out, size_t out_size)
 {
     const char *p = find_value(json, key);
     size_t n = 0;
 
-    if (!p || *p++ != '"' || out_size == 0)
-        return -1;
+    if (!p || *p++ != '"' || out_size == 0) return -1;
     while (*p && *p != '"') {
         unsigned char ch = (unsigned char)*p++;
         if (ch == '\\') {
+            unsigned long cp;
             ch = (unsigned char)*p++;
-            if (ch == '"' || ch == '\\' || ch == '/')
-                ;
+            if (ch == '"' || ch == '\\' || ch == '/') ;
             else if (ch == 'b') ch = '\b';
             else if (ch == 'f') ch = '\f';
             else if (ch == 'n') ch = '\n';
             else if (ch == 'r') ch = '\r';
             else if (ch == 't') ch = '\t';
-            else
-                return -1;
+            else if (ch == 'u') {
+                unsigned long low;
+                if (hex4(p, &cp) != 0) return -1;
+                p += 4;
+                if (cp >= 0xd800UL && cp <= 0xdbffUL) {
+                    if (p[0] != '\\' || p[1] != 'u' || hex4(p + 2, &low) != 0 ||
+                        low < 0xdc00UL || low > 0xdfffUL) return -1;
+                    p += 6;
+                    cp = 0x10000UL + ((cp - 0xd800UL) << 10) + (low - 0xdc00UL);
+                } else if (cp >= 0xdc00UL && cp <= 0xdfffUL) return -1;
+                if (append_utf8(cp, out, out_size, &n) != 0) return -1;
+                continue;
+            } else return -1;
         }
-        if (ch < 0x20 || n + 1 >= out_size)
-            return -1;
+        if (ch < 0x20 || n + 1 >= out_size) return -1;
         out[n++] = (char)ch;
     }
-    if (*p != '"' || n == 0)
-        return -1;
+    if (*p != '"' || n == 0) return -1;
     out[n] = '\0';
     return 0;
 }
