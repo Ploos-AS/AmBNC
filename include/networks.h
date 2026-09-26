@@ -31,6 +31,15 @@ struct ambnc_networks_config {
     unsigned int count;
 };
 
+#define AMBNC_NETWORK_RUNTIME_CONFIGURED 0
+#define AMBNC_NETWORK_RUNTIME_CONNECTING 1
+#define AMBNC_NETWORK_RUNTIME_CONNECTED 2
+#define AMBNC_NETWORK_RUNTIME_DISCONNECTED 3
+
+void ambnc_network_runtime_reset(void);
+void ambnc_network_runtime_set(unsigned int index, int state);
+int ambnc_network_runtime_get(unsigned int index);
+
 void ambnc_networks_init(struct ambnc_networks_config *config);
 int ambnc_networks_load(struct ambnc_networks_config *config, const char *path,
                         char *error, unsigned int error_size);
