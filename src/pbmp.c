@@ -22,20 +22,70 @@ static const char *skip_ws(const char *p)
 
 static const char *find_value(const char *json, const char *key)
 {
-    char needle[64];
     const char *p;
+    size_t key_len;
 
     if (!json || !key)
         return 0;
-    if (snprintf(needle, sizeof(needle), "\"%s\"", key) >= (int)sizeof(needle))
+    key_len = strlen(key);
+    p = skip_ws(json);
+    if (*p++ != '{')
         return 0;
-    p = json;
-    while ((p = strstr(p, needle)) != 0) {
-        p = skip_ws(p + strlen(needle));
-        if (*p == ':')
-            return skip_ws(p + 1);
+
+    for (;;) {
+        const char *name;
+        size_t name_len = 0;
+        int escaped = 0;
+
+        p = skip_ws(p);
+        if (*p == '}')
+            return 0;
+        if (*p++ != '"')
+            return 0;
+        name = p;
+        while (*p) {
+            if (!escaped && *p == '"')
+                break;
+            if (!escaped && *p == '\\')
+                escaped = 1;
+            else
+                escaped = 0;
+            ++p;
+            ++name_len;
+        }
+        if (*p++ != '"')
+            return 0;
+        p = skip_ws(p);
+        if (*p++ != ':')
+            return 0;
+        p = skip_ws(p);
+        if (name_len == key_len && strncmp(name, key, key_len) == 0)
+            return p;
+
+        if (*p == '"') {
+            ++p;
+            escaped = 0;
+            while (*p) {
+                if (!escaped && *p == '"') { ++p; break; }
+                if (!escaped && *p == '\\') escaped = 1;
+                else escaped = 0;
+                ++p;
+            }
+        } else {
+            int depth = 0;
+            while (*p) {
+                if ((*p == ',' || *p == '}') && depth == 0)
+                    break;
+                if (*p == '{' || *p == '[') ++depth;
+                else if (*p == '}' || *p == ']') --depth;
+                ++p;
+            }
+        }
+        p = skip_ws(p);
+        if (*p == ',') { ++p; continue; }
+        if (*p == '}') return 0;
+        return 0;
     }
-    return 0;
 }
 
 static int string_value(const char *json, const char *key, char *out, size_t out_size)
