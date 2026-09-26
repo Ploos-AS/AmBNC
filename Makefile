@@ -4,9 +4,9 @@ endif
 CFLAGS ?= -Os -Wall -Wextra -Werror -m68000 -Iinclude
 LDFLAGS ?= -mcrt=nix20
 TARGET := AmBNC
-SOURCES := src/main.c src/net.c src/irc.c src/downstream.c src/state.c src/rexx.c src/rexx_events.c src/networks.c src/multinet.c src/upstream.c
+SOURCES := src/main.c src/net.c src/irc.c src/downstream.c src/state.c src/rexx.c src/rexx_events.c src/networks.c src/multinet.c src/upstream.c src/pbmp.c
 OBJECTS := $(SOURCES:.c=.o)
-HEADERS := include/ambnc.h include/net.h include/irc.h include/downstream.h include/state.h include/rexx.h include/rexx_events.h include/networks.h include/multinet.h include/upstream.h include/modernirc.h
+HEADERS := include/ambnc.h include/net.h include/irc.h include/downstream.h include/state.h include/rexx.h include/rexx_events.h include/networks.h include/multinet.h include/upstream.h include/modernirc.h include/pbmp.h
 AMIGA_OUT ?= build/fs-uae/native
 M8_2_OUT ?= build/m8_2
 M8_2_HOST ?= HOST_IP_HERE
@@ -36,6 +36,8 @@ check:
 	@grep -q 'sasl_plain' include/networks.h
 	@grep -q 'AMBNC_TLS_PROXY' include/networks.h
 	@grep -q 'ambnc_m7_send_registration' src/networks.c
+	@grep -q 'AMBNC_PBMP_ENDPOINT_KIND "bouncer"' include/pbmp.h
+	@grep -q '"endpoint.info"' src/pbmp.c
 	@bash ci/m8_2/check-harness.sh
 	@echo "M7 static checks: PASS"
 
