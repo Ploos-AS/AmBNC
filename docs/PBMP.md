@@ -25,3 +25,25 @@ A host-side bridge MAY expose the reference Unix-domain JSONL transport and forw
 ## Security
 
 Management transports should default to local-only access. A network-reachable bridge requires authentication, confidentiality, integrity protection, and explicit operator configuration.
+
+## Qualification status
+
+AmBNC is qualified against PBMP/1 Endpoint Profile M0.
+
+The CI qualification pins the PBMP suite to revision
+`ccf17aa46fa3801fe035513f025b835ca688235d` and exercises the real
+`src/pbmp.c` adapter through a host-only Unix JSONL bridge. The required
+Endpoint M0 methods are:
+
+- `pbmp.info`
+- `capabilities.list`
+- `endpoint.info`
+
+The qualification report is generated as
+`build/pbmp-conformance-report.json` and uploaded with the workflow
+qualification evidence.
+
+The host bridge is test infrastructure only. AmBNC remains independently
+functional when PBMP is disabled or unavailable, and the native Amiga build
+does not depend on Unix-domain sockets, BotWeb, or BotAI.
+
