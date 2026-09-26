@@ -88,6 +88,58 @@ static const char *find_value(const char *json, const char *key)
     }
 }
 
+static int unique_top_level_key(const char *json, const char *key)
+{
+    const char *p = skip_ws(json);
+    size_t key_len = strlen(key);
+    int matches = 0;
+
+    if (!p || *p++ != '{') return 0;
+    for (;;) {
+        const char *name;
+        size_t name_len = 0;
+        int escaped = 0;
+        int depth = 0;
+
+        p = skip_ws(p);
+        if (*p == '}') break;
+        if (*p++ != '"') return 0;
+        name = p;
+        while (*p) {
+            if (!escaped && *p == '"') break;
+            if (!escaped && *p == '\\') escaped = 1; else escaped = 0;
+            ++p; ++name_len;
+        }
+        if (*p++ != '"') return 0;
+        p = skip_ws(p);
+        if (*p++ != ':') return 0;
+        p = skip_ws(p);
+        if (name_len == key_len && strncmp(name, key, key_len) == 0)
+            ++matches;
+
+        if (*p == '"') {
+            ++p; escaped = 0;
+            while (*p) {
+                if (!escaped && *p == '"') { ++p; break; }
+                if (!escaped && *p == '\\') escaped = 1; else escaped = 0;
+                ++p;
+            }
+        } else {
+            while (*p) {
+                if ((*p == ',' || *p == '}') && depth == 0) break;
+                if (*p == '{' || *p == '[') ++depth;
+                else if (*p == '}' || *p == ']') --depth;
+                ++p;
+            }
+        }
+        p = skip_ws(p);
+        if (*p == ',') { ++p; continue; }
+        if (*p == '}') break;
+        return 0;
+    }
+    return matches == 1;
+}
+
 static int string_value(const char *json, const char *key, char *out, size_t out_size)
 {
     const char *p = find_value(json, key);
@@ -171,6 +223,11 @@ int ambnc_pbmp_handle(const char *request, char *response, size_t response_size)
     int written;
 
     if (!request || !response || response_size == 0)
+        return -1;
+    if (!unique_top_level_key(request, "pbmp") ||
+        !unique_top_level_key(request, "type") ||
+        !unique_top_level_key(request, "id") ||
+        !unique_top_level_key(request, "method"))
         return -1;
     if (!literal_value(request, "pbmp", "1"))
         return -1;
