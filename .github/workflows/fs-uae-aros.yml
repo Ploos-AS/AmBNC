@@ -27,6 +27,29 @@ jobs:
       - name: PBMP Endpoint M0 adapter smoke test
         run: make check-pbmp
 
+      - name: PBMP Endpoint M0 conformance
+        shell: bash
+        run: |
+          set -euo pipefail
+          PBMP_REV=ccf17aa46fa3801fe035513f025b835ca688235d
+          git clone https://github.com/Ploos-AS/PBMP.git build/pbmp-suite
+          git -C build/pbmp-suite checkout "$PBMP_REV"
+          cc -std=c99 -Wall -Wextra -Werror -Iinclude tests/pbmp_driver.c src/pbmp.c -o build/tests/pbmp_driver
+          python3 ci/pbmp_bridge.py --socket /tmp/ambnc-pbmp.sock --driver "$PWD/build/tests/pbmp_driver" --requests 3 &
+          bridge_pid=$!
+          for i in {1..50}; do
+            [ -S /tmp/ambnc-pbmp.sock ] && break
+            sleep 0.1
+          done
+          python3 build/pbmp-suite/tools/qualify_endpoint.py \
+            --profile endpoint-m0 \
+            --socket /tmp/ambnc-pbmp.sock \
+            --implementation-name AmBNC \
+            --implementation-version 0.7.0-m7 \
+            --output build/pbmp-conformance-report.json
+          wait "$bridge_pid"
+          test "$(python3 -c 'import json; print(json.load(open("build/pbmp-conformance-report.json"))["result"])')" = pass
+
       - name: Gate 1 - native Bebbo AmBNC build
         run: bash ci/fs-uae/build-native.sh
 
@@ -39,6 +62,7 @@ jobs:
         with:
           name: fs-uae-aros-qualification
           path: |
+            build/pbmp-conformance-report.json
             build/fs-uae/native/AmBNC
             build/fs-uae/native/AmBNC.sha256
             build/fs-uae/native/file.txt
