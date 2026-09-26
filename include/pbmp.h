@@ -3,6 +3,8 @@
 
 #include <stddef.h>
 
+struct ambnc_networks_config;
+
 /*
  * Optional PBMP management adapter.
  *
@@ -13,6 +15,8 @@
 #define AMBNC_PBMP_VERSION 1
 #define AMBNC_PBMP_ENDPOINT_ID "ambnc"
 #define AMBNC_PBMP_ENDPOINT_KIND "bouncer"
+
+void ambnc_pbmp_set_networks(const struct ambnc_networks_config *networks);
 
 int ambnc_pbmp_handle(const char *request, char *response, size_t response_size);
 
