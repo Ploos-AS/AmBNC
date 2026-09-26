@@ -66,6 +66,14 @@ int main(void)
         "\"method\":\"pbmp.info\",\"params\":{}}",
         "\"version\":1", 1);
     failed |= check_raw(
+        "{\"pbmp\":1,\"type\":\"request\",\"id\":\"dup-method\","
+        "\"method\":\"pbmp.info\",\"method\":\"endpoint.info\",\"params\":{}}",
+        "", 0);
+    failed |= check_raw(
+        "{\"pbmp\":1,\"pbmp\":1,\"type\":\"request\",\"id\":\"dup-version\","
+        "\"method\":\"pbmp.info\",\"params\":{}}",
+        "", 0);
+    failed |= check_raw(
         "{\"pbmp\":2,\"type\":\"request\",\"id\":\"bad-version\","
         "\"method\":\"pbmp.info\",\"params\":{}}",
         "", 0);
