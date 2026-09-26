@@ -59,13 +59,18 @@ Each configured network currently exposes:
 - `name`: the configured network section name.
 - `state`: the current AmBNC runtime state: `configured`, `connecting`,
   `connected`, or `disconnected`.
+- `retry_seconds`: remaining reconnect countdown in seconds. It is `0` when
+  no reconnect countdown is active.
 
 The response intentionally does not expose upstream hosts, ports, nick/user
 credentials, passwords, SASL secrets, or other connection secrets. The state is published by AmBNC's multinet runtime rather than inferred by
 the PBMP adapter. `configured` means the network exists in configuration but
 has not yet entered a connection attempt; `connecting` marks an active
 attempt, `connected` means an upstream socket and IRC registration path have
-been established, and `disconnected` means the upstream is down/retrying.
+been established, and `disconnected` means the upstream is down, including manual disconnects
+and reconnect backoff. During automatic backoff, `retry_seconds` is the live
+countdown to the next connection attempt; successful connection resets it to
+`0`.
 
 When no multinet configuration has been bound, `networks.list` returns an
 empty list rather than making PBMP a prerequisite for AmBNC startup.
