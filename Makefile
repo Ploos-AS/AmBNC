@@ -1,7 +1,7 @@
 ifeq ($(origin CC), default)
 CC := m68k-amigaos-gcc
 endif
-CFLAGS ?= -Os -Wall -Wextra -Werror -m68000 -Iinclude
+CFLAGS ?= -Os -Wall -Wextra -Werror -m68000 -Iinclude -DAMBNC_WITH_PBMP
 LDFLAGS ?= -mcrt=nix20
 TARGET := AmBNC
 SOURCES := src/main.c src/net.c src/irc.c src/downstream.c src/state.c src/rexx.c src/rexx_events.c src/networks.c src/multinet.c src/upstream.c src/pbmp.c
