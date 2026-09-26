@@ -34,7 +34,7 @@ jobs:
           PBMP_REV=ccf17aa46fa3801fe035513f025b835ca688235d
           git clone https://github.com/Ploos-AS/PBMP.git build/pbmp-suite
           git -C build/pbmp-suite checkout "$PBMP_REV"
-          cc -std=c99 -Wall -Wextra -Werror -Iinclude tests/pbmp_driver.c src/pbmp.c -o build/tests/pbmp_driver
+          cc -std=c99 -Wall -Wextra -Werror -Iinclude tests/pbmp_driver.c src/pbmp.c src/network_runtime.c -o build/tests/pbmp_driver
           python3 ci/pbmp_bridge.py --socket /tmp/ambnc-pbmp.sock --driver "$PWD/build/tests/pbmp_driver" --requests 3 &
           bridge_pid=$!
           for i in {1..50}; do
