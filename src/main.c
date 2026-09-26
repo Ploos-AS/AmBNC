@@ -5,6 +5,7 @@
 #include "ambnc.h"
 #include "multinet.h"
 #include "networks.h"
+#include "pbmp.h"
 #include "state.h"
 #include "upstream.h"
 
@@ -28,6 +29,7 @@ static int run_config(const char *path)
         return 10;
     }
     printf("AmBNC: loaded %u network(s) from %s\n", networks.count, path);
+    ambnc_pbmp_set_networks(&networks);
     return ambnc_multinet_run(&networks);
 }
 
