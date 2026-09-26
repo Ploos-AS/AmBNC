@@ -47,3 +47,24 @@ The host bridge is test infrastructure only. AmBNC remains independently
 functional when PBMP is disabled or unavailable, and the native Amiga build
 does not depend on Unix-domain sockets, BotWeb, or BotAI.
 
+## `networks.list`
+
+AmBNC advertises `networks.list` as an optional PBMP capability in addition to
+the Endpoint M0 requirements. It is a read-only view of the active
+`ambnc_networks_config`.
+
+Each configured network currently exposes:
+
+- `id`: `network-N`, derived from the configuration order.
+- `name`: the configured network section name.
+- `state`: currently `configured`.
+
+The response intentionally does not expose upstream hosts, ports, nick/user
+credentials, passwords, SASL secrets, or other connection secrets. PBMP
+consumers MUST NOT infer that a `configured` network is currently connected;
+runtime connection-state reporting may be added separately in a later
+capability revision.
+
+When no multinet configuration has been bound, `networks.list` returns an
+empty list rather than making PBMP a prerequisite for AmBNC startup.
+
