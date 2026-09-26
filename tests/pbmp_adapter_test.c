@@ -61,6 +61,11 @@ int main(void)
         "\"method\":\"pbmp.info\",\"params\":{}}",
         "\"id\":\"quote\\\\\\\"id\"", 1);
     failed |= check_raw(
+        "{\"note\":\"\\\"method\\\":\\\"unsupported.method\\\"\",\"pbmp\":1,"
+        "\"type\":\"request\",\"id\":\"top-level-method\","
+        "\"method\":\"pbmp.info\",\"params\":{}}",
+        "\"version\":1", 1);
+    failed |= check_raw(
         "{\"pbmp\":2,\"type\":\"request\",\"id\":\"bad-version\","
         "\"method\":\"pbmp.info\",\"params\":{}}",
         "", 0);
