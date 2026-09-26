@@ -3,7 +3,15 @@
 #include <string.h>
 
 #include "ambnc.h"
+#include "networks.h"
 #include "pbmp.h"
+
+static const struct ambnc_networks_config *pbmp_networks;
+
+void ambnc_pbmp_set_networks(const struct ambnc_networks_config *networks)
+{
+    pbmp_networks = networks;
+}
 
 static const char *skip_ws(const char *p)
 {
@@ -123,13 +131,40 @@ int ambnc_pbmp_handle(const char *request, char *response, size_t response_size)
     } else if (strcmp(method, "capabilities.list") == 0) {
         written = snprintf(response, response_size,
             "{\"pbmp\":1,\"type\":\"response\",\"id\":\"%s\",\"ok\":true,"
-            "\"result\":{\"capabilities\":[\"endpoint.info\"]}}\n", escaped_id);
+            "\"result\":{\"capabilities\":[\"endpoint.info\",\"networks.list\"]}}\n", escaped_id);
     } else if (strcmp(method, "endpoint.info") == 0) {
         written = snprintf(response, response_size,
             "{\"pbmp\":1,\"type\":\"response\",\"id\":\"%s\",\"ok\":true,"
             "\"result\":{\"endpoint\":{\"id\":\"%s\",\"kind\":\"%s\","
             "\"implementation\":{\"name\":\"%s\",\"version\":\"%s\"},\"state\":\"running\"}}}\n",
             escaped_id, AMBNC_PBMP_ENDPOINT_ID, AMBNC_PBMP_ENDPOINT_KIND, AMBNC_NAME, AMBNC_VERSION);
+    } else if (strcmp(method, "networks.list") == 0) {
+        size_t used;
+        unsigned int i;
+        written = snprintf(response, response_size,
+            "{\"pbmp\":1,\"type\":\"response\",\"id\":\"%s\",\"ok\":true,"
+            "\"result\":{\"networks\":[", escaped_id);
+        if (written < 0 || (size_t)written >= response_size)
+            return -1;
+        used = (size_t)written;
+        if (pbmp_networks != 0) {
+            for (i = 0; i < pbmp_networks->count; ++i) {
+                char name[AMBNC_NETWORK_NAME_MAX * 2 + 1];
+                const struct ambnc_network_config *n = &pbmp_networks->networks[i];
+                if (json_escape(n->name, name, sizeof(name)) != 0)
+                    return -1;
+                written = snprintf(response + used, response_size - used,
+                    "%s{\"id\":\"network-%u\",\"name\":\"%s\",\"state\":\"configured\"}",
+                    i ? "," : "", i + 1U, name);
+                if (written < 0 || (size_t)written >= response_size - used)
+                    return -1;
+                used += (size_t)written;
+            }
+        }
+        written = snprintf(response + used, response_size - used, "]}}\n");
+        if (written < 0 || (size_t)written >= response_size - used)
+            return -1;
+        return (int)(used + (size_t)written);
     } else {
         written = snprintf(response, response_size,
             "{\"pbmp\":1,\"type\":\"response\",\"id\":\"%s\",\"ok\":false,"
