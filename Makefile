@@ -43,7 +43,7 @@ check:
 
 check-pbmp:
 	@mkdir -p build/tests
-	@cc -std=c89 -Wall -Wextra -Werror -Iinclude tests/pbmp_adapter_test.c src/pbmp.c -o build/tests/pbmp_adapter_test
+	@cc -std=c99 -Wall -Wextra -Werror -Iinclude tests/pbmp_adapter_test.c src/pbmp.c -o build/tests/pbmp_adapter_test
 	@build/tests/pbmp_adapter_test
 
 amiga:
