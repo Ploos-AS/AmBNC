@@ -9,7 +9,7 @@ docker run --rm -v "$PWD:/work" -w /work "$IMAGE" m68k-amigaos-gcc \
   -Iinclude -Os -Wall -Wextra -Werror -m68000 -mcrt=nix20 \
   -o AmBNC \
   src/main.c src/net.c src/irc.c src/downstream.c src/state.c \
-  src/rexx.c src/rexx_events.c src/networks.c src/multinet.c src/upstream.c
+  src/rexx.c src/rexx_events.c src/networks.c src/network_runtime.c src/multinet.c src/upstream.c
 cp AmBNC "$OUT_DIR/AmBNC"
 file "$OUT_DIR/AmBNC" | tee "$OUT_DIR/file.txt"
 sha256sum "$OUT_DIR/AmBNC" | tee "$OUT_DIR/AmBNC.sha256"
