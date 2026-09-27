@@ -86,6 +86,17 @@ int main(void)
         "\"method\":\"pbmp.info\",\"params\":{}}",
         "", 0);
     failed |= check_raw(
+        "{\"extra\":{\"items\":[{\"text\":\"},],fake method,comma\"},"
+        "{\"nested\":\"[still,string]\"}]},\"pbmp\":1,\"type\":\"request\","
+        "\"id\":\"nested-extra\",\"method\":\"pbmp.info\","
+        "\"params\":{\"note\":\"} ], comma , inside string\"}}",
+        "\"id\":\"nested-extra\"", 1);
+    failed |= check_raw(
+        "{\"pbmp\":1,\"type\":\"request\",\"id\":\"nested-before-method\","
+        "\"params\":{\"array\":[1,{\"value\":\"}, method fake\"},3]},"
+        "\"method\":\"endpoint.info\"}",
+        "\"kind\":\"bouncer\"", 1);
+    failed |= check_raw(
         "{\"pbmp\":1,\"type\":\"request\",\"id\":\"trailing-ok\","
         "\"method\":\"pbmp.info\",\"params\":{}}   \t\n",
         "\"id\":\"trailing-ok\"", 1);
