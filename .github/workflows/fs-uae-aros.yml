@@ -27,6 +27,9 @@ jobs:
       - name: PBMP Endpoint M0 adapter smoke test
         run: make check-pbmp
 
+      - name: Network runtime snapshot regression
+        run: make check-runtime
+
       - name: PBMP Endpoint M0 conformance
         shell: bash
         run: |
