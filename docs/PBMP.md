@@ -69,6 +69,9 @@ Each configured network currently exposes:
   `connected`, or `disconnected`.
 - `retry_seconds`: remaining reconnect countdown in seconds. It is `0` when
   no reconnect countdown is active.
+- `reconnect_attempts`: number of automatic reconnect attempts made for this
+  network during the current AmBNC runtime instance. The initial connection
+  attempt is not counted. The counter starts at `0` after restart.
 - `paused`: boolean operator-control state. `true` means automatic upstream
   connection/reconnection is intentionally paused; `false` means normal
   connection management is active.
@@ -87,7 +90,10 @@ automatic connection/reconnection; a non-zero `retry_seconds` gives the live
 backoff countdown. `disconnected` with `paused:true` means the operator has
 intentionally stopped automatic connection attempts, so `retry_seconds` is
 `0`. Resuming clears the pause condition and allows the normal connection
-loop to proceed. A successful connection also has `retry_seconds:0`.
+loop to proceed. A successful connection also has `retry_seconds:0`. Each automatic attempt
+that begins after a reconnect countdown increments `reconnect_attempts`.
+The counter is observational only: it does not alter backoff behavior and is
+not persisted across AmBNC restarts.
 
 The pause flag is runtime control telemetry only. It does not reveal why an
 operator paused a network and does not expose any connection configuration or
