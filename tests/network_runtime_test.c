@@ -24,6 +24,9 @@ int main(void)
     ambnc_network_runtime_reset();
     failed |= expect_int("reset paused", ambnc_network_runtime_get_paused(), 0);
     failed |= expect_uint("reset uptime", (unsigned int)ambnc_runtime_get_uptime(), 0);
+    for (i = 0; i < AMBNC_NETWORKS_MAX; ++i)
+        failed |= expect_uint("reset reconnect attempts",
+                              (unsigned int)ambnc_network_runtime_get_reconnect_attempts(i), 0);
     for (i = 0; i < AMBNC_NETWORKS_MAX; ++i) {
         failed |= expect_int("reset state", ambnc_network_runtime_get(i),
                              AMBNC_NETWORK_RUNTIME_CONFIGURED);
@@ -32,6 +35,17 @@ int main(void)
 
     ambnc_runtime_set_uptime(42);
     failed |= expect_uint("uptime 42", (unsigned int)ambnc_runtime_get_uptime(), 42);
+
+    ambnc_network_runtime_increment_reconnect_attempts(0);
+    ambnc_network_runtime_increment_reconnect_attempts(0);
+    ambnc_network_runtime_increment_reconnect_attempts(1);
+    failed |= expect_uint("network 0 reconnect attempts",
+                          (unsigned int)ambnc_network_runtime_get_reconnect_attempts(0), 2);
+    failed |= expect_uint("network 1 reconnect attempts",
+                          (unsigned int)ambnc_network_runtime_get_reconnect_attempts(1), 1);
+    ambnc_network_runtime_increment_reconnect_attempts(AMBNC_NETWORKS_MAX);
+    failed |= expect_uint("out of range reconnect attempts",
+                          (unsigned int)ambnc_network_runtime_get_reconnect_attempts(AMBNC_NETWORKS_MAX), 0);
 
     ambnc_network_runtime_set(0, AMBNC_NETWORK_RUNTIME_CONNECTING);
     ambnc_network_runtime_set_retry(0, 8);
