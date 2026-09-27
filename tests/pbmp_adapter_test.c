@@ -50,6 +50,9 @@ int main(void)
     failed |= check("capabilities.list", "\"endpoint.info\"");
     failed |= check("capabilities.list", "\"networks.list\"");
     failed |= check("endpoint.info", "\"kind\":\"bouncer\"");
+    failed |= check("endpoint.info", "\"uptime_seconds\":0");
+    ambnc_runtime_set_uptime(42);
+    failed |= check("endpoint.info", "\"uptime_seconds\":42");
     failed |= check("networks.list", "\"networks\":[]");
     failed |= check("unsupported.method", "\"code\":\"not_supported\"");
     failed |= check_raw(
