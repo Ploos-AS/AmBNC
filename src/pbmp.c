@@ -361,6 +361,7 @@ int ambnc_pbmp_handle(const char *request, char *response, size_t response_size)
                     i ? "," : "", i + 1U, name,
                     runtime_state_name(ambnc_network_runtime_get(i)),
                     ambnc_network_runtime_get_retry(i),
+                    ambnc_network_runtime_get_reconnect_attempts(i),
                     ambnc_network_runtime_get_paused() ? "true" : "false");
                 if (written < 0 || (size_t)written >= response_size - used)
                     return -1;
