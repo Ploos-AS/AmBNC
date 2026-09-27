@@ -27,6 +27,8 @@ int main(void)
     for (i = 0; i < AMBNC_NETWORKS_MAX; ++i)
         failed |= expect_uint("reset reconnect attempts",
                               (unsigned int)ambnc_network_runtime_get_reconnect_attempts(i), 0);
+        failed |= expect_uint("reset connected seconds",
+                              (unsigned int)ambnc_network_runtime_get_connected_seconds(i), 0);
     for (i = 0; i < AMBNC_NETWORKS_MAX; ++i) {
         failed |= expect_int("reset state", ambnc_network_runtime_get(i),
                              AMBNC_NETWORK_RUNTIME_CONFIGURED);
@@ -54,6 +56,9 @@ int main(void)
     failed |= expect_uint("retry 8", ambnc_network_runtime_get_retry(0), 8);
 
     ambnc_network_runtime_set(0, AMBNC_NETWORK_RUNTIME_CONNECTED);
+    ambnc_network_runtime_set_connected_seconds(0, 17);
+    failed |= expect_uint("connected seconds",
+                          (unsigned int)ambnc_network_runtime_get_connected_seconds(0), 17);
     ambnc_network_runtime_set_retry(0, 0);
     failed |= expect_int("connected", ambnc_network_runtime_get(0),
                          AMBNC_NETWORK_RUNTIME_CONNECTED);
@@ -65,6 +70,9 @@ int main(void)
     failed |= expect_int("resumed", ambnc_network_runtime_get_paused(), 0);
 
     ambnc_network_runtime_set(0, AMBNC_NETWORK_RUNTIME_DISCONNECTED);
+    ambnc_network_runtime_set_connected_seconds(0, 0);
+    failed |= expect_uint("disconnected connected seconds",
+                          (unsigned int)ambnc_network_runtime_get_connected_seconds(0), 0);
     ambnc_network_runtime_set_retry(0, 30);
     failed |= expect_int("disconnected", ambnc_network_runtime_get(0),
                          AMBNC_NETWORK_RUNTIME_DISCONNECTED);
@@ -77,6 +85,8 @@ int main(void)
                          AMBNC_NETWORK_RUNTIME_CONFIGURED);
     failed |= expect_uint("out of range retry",
                           ambnc_network_runtime_get_retry(AMBNC_NETWORKS_MAX), 0);
+    failed |= expect_uint("out of range connected seconds",
+                          (unsigned int)ambnc_network_runtime_get_connected_seconds(AMBNC_NETWORKS_MAX), 0);
 
     if (failed) return 1;
     puts("network runtime snapshot: PASS");
