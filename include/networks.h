@@ -43,6 +43,8 @@ void ambnc_network_runtime_set_retry(unsigned int index, unsigned int seconds);
 unsigned int ambnc_network_runtime_get_retry(unsigned int index);
 void ambnc_network_runtime_increment_reconnect_attempts(unsigned int index);
 unsigned long ambnc_network_runtime_get_reconnect_attempts(unsigned int index);
+void ambnc_network_runtime_set_connected_seconds(unsigned int index, unsigned long seconds);
+unsigned long ambnc_network_runtime_get_connected_seconds(unsigned int index);
 void ambnc_network_runtime_set_paused(int paused);
 int ambnc_network_runtime_get_paused(void);
 void ambnc_runtime_set_uptime(unsigned long seconds);
