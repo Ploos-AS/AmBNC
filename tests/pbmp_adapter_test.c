@@ -133,16 +133,16 @@ int main(void)
     failed |= check("networks.list", "\"name\":\"Libera\",\"state\":\"configured\",\"retry_seconds\":0,\"reconnect_attempts\":2");
     failed |= check("networks.list", "\"name\":\"OFTC\",\"state\":\"configured\",\"retry_seconds\":0,\"reconnect_attempts\":0");
     ambnc_network_runtime_set_paused(1);
-    failed |= check("networks.list", "\"name\":\"Libera\",\"state\":\"configured\",\"retry_seconds\":0,\"paused\":true");
+    failed |= check("networks.list", "\"name\":\"Libera\",\"state\":\"configured\",\"retry_seconds\":0,\"reconnect_attempts\":2,\"paused\":true");
     ambnc_network_runtime_set_paused(0);
-    failed |= check("networks.list", "\"name\":\"Libera\",\"state\":\"configured\",\"retry_seconds\":0,\"paused\":false");
+    failed |= check("networks.list", "\"name\":\"Libera\",\"state\":\"configured\",\"retry_seconds\":0,\"reconnect_attempts\":2,\"paused\":false");
     ambnc_network_runtime_set(0, AMBNC_NETWORK_RUNTIME_CONNECTING);
     failed |= check("networks.list", "\"name\":\"Libera\",\"state\":\"connecting\"");
     ambnc_network_runtime_set(0, AMBNC_NETWORK_RUNTIME_CONNECTED);
     failed |= check("networks.list", "\"name\":\"Libera\",\"state\":\"connected\"");
     ambnc_network_runtime_set(0, AMBNC_NETWORK_RUNTIME_DISCONNECTED);
     ambnc_network_runtime_set_retry(0, 8);
-    failed |= check("networks.list", "\"name\":\"Libera\",\"state\":\"disconnected\",\"retry_seconds\":8");
+    failed |= check("networks.list", "\"name\":\"Libera\",\"state\":\"disconnected\",\"retry_seconds\":8,\"reconnect_attempts\":2");
     ambnc_network_runtime_set(0, AMBNC_NETWORK_RUNTIME_CONFIGURED);
     failed |= check("networks.list", "\"name\":\"Libera\",\"state\":\"configured\"");
     {
