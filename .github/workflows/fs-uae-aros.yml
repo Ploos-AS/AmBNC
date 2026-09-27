@@ -34,7 +34,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          PBMP_REV=ccf17aa46fa3801fe035513f025b835ca688235d
+          PBMP_REV=b8c9ff18fca516a118a7a45001860e5de9c95da3
           git clone https://github.com/Ploos-AS/PBMP.git build/pbmp-suite
           git -C build/pbmp-suite checkout "$PBMP_REV"
           cc -std=c99 -Wall -Wextra -Werror -Iinclude tests/pbmp_driver.c src/pbmp.c src/network_runtime.c -o build/tests/pbmp_driver
