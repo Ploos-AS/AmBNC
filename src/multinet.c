@@ -117,6 +117,7 @@ static void schedule_reconnect(struct network_runtime *runtime)
 static void disconnect_runtime(struct network_runtime *runtime, int schedule)
 {
     ambnc_network_runtime_set(runtime_index(runtime), AMBNC_NETWORK_RUNTIME_DISCONNECTED);
+    ambnc_network_runtime_set_connected_seconds(runtime_index(runtime), 0);
     if (runtime->upstream >= 0) {
         hook_lifecycle(runtime, "ON_DISCONNECT");
         ambnc_net_close_socket(runtime->upstream);
@@ -171,6 +172,7 @@ static int connect_runtime(struct network_runtime *runtime)
     }
 
     ambnc_network_runtime_set(runtime_index(runtime), AMBNC_NETWORK_RUNTIME_CONNECTED);
+    ambnc_network_runtime_set_connected_seconds(runtime_index(runtime), 0);
     printf("AmBNC[%s]: upstream connected\n", runtime->config->name);
     hook_lifecycle(runtime, "ON_CONNECT");
     return 0;
@@ -343,6 +345,11 @@ int ambnc_multinet_run(const struct ambnc_networks_config *config)
         if (rc < 0) break;
         ++uptime_seconds;
         ambnc_runtime_set_uptime(uptime_seconds);
+        for (i = 0; i < config->count; ++i) {
+            if (ambnc_network_runtime_get(i) == AMBNC_NETWORK_RUNTIME_CONNECTED)
+                ambnc_network_runtime_set_connected_seconds(i,
+                    ambnc_network_runtime_get_connected_seconds(i) + 1UL);
+        }
 
         for (i = 0; i < socket_count; ++i) {
             struct network_runtime *runtime;
