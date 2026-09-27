@@ -13,7 +13,7 @@ M8_2_HOST ?= HOST_IP_HERE
 M8_2_SYSTEM_DIR ?= SYSTEM_DIR_HERE
 M8_2_KICKSTART_FILE ?= KICKSTART_FILE_HERE
 
-.PHONY: all clean check check-pbmp amiga qualify-m8_1 qualify-m8_2 review-m8_2-evidence
+.PHONY: all clean check check-pbmp check-runtime amiga qualify-m8_1 qualify-m8_2 review-m8_2-evidence
 
 all: $(TARGET)
 
@@ -46,6 +46,11 @@ check-pbmp:
 	@mkdir -p build/tests
 	@cc -std=c99 -Wall -Wextra -Werror -Iinclude tests/pbmp_adapter_test.c src/pbmp.c src/network_runtime.c -o build/tests/pbmp_adapter_test
 	@build/tests/pbmp_adapter_test
+
+check-runtime:
+	@mkdir -p build/tests
+	@cc -std=c99 -Wall -Wextra -Werror -Iinclude tests/network_runtime_test.c src/network_runtime.c -o build/tests/network_runtime_test
+	@build/tests/network_runtime_test
 
 amiga:
 	@bash ci/fs-uae/build-native.sh "$(AMIGA_OUT)"
