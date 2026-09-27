@@ -123,8 +123,12 @@ int main(void)
     strcpy(networks.networks[1].name, "OFTC");
     strcpy(networks.networks[1].pass, "secret-two");
     ambnc_pbmp_set_networks(&networks);
-    failed |= check("networks.list", "\"id\":\"network-1\",\"name\":\"Libera\",\"state\":\"configured\",\"retry_seconds\":0}");
+    failed |= check("networks.list", "\"id\":\"network-1\",\"name\":\"Libera\",\"state\":\"configured\",\"retry_seconds\":0,\"paused\":false}");
     failed |= check("networks.list", "\"id\":\"network-2\",\"name\":\"OFTC\",\"state\":\"configured\"");
+    ambnc_network_runtime_set_paused(1);
+    failed |= check("networks.list", "\"name\":\"Libera\",\"state\":\"configured\",\"retry_seconds\":0,\"paused\":true");
+    ambnc_network_runtime_set_paused(0);
+    failed |= check("networks.list", "\"name\":\"Libera\",\"state\":\"configured\",\"retry_seconds\":0,\"paused\":false");
     ambnc_network_runtime_set(0, AMBNC_NETWORK_RUNTIME_CONNECTING);
     failed |= check("networks.list", "\"name\":\"Libera\",\"state\":\"connecting\"");
     ambnc_network_runtime_set(0, AMBNC_NETWORK_RUNTIME_CONNECTED);
