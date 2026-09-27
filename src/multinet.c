@@ -254,6 +254,7 @@ int ambnc_multinet_run(const struct ambnc_networks_config *config)
     struct line_context contexts[AMBNC_NETWORKS_MAX];
     unsigned int i;
     int paused = 0;
+    unsigned long uptime_seconds = 0;
 
     if (config == 0 || config->count == 0 || config->count > AMBNC_NETWORKS_MAX) return 10;
     memset(&control, 0, sizeof(control));
@@ -340,6 +341,8 @@ int ambnc_multinet_run(const struct ambnc_networks_config *config)
             if (control.request_reload) control.request_reload = 0;
         }
         if (rc < 0) break;
+        ++uptime_seconds;
+        ambnc_runtime_set_uptime(uptime_seconds);
 
         for (i = 0; i < socket_count; ++i) {
             struct network_runtime *runtime;
