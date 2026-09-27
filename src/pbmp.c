@@ -338,8 +338,9 @@ int ambnc_pbmp_handle(const char *request, char *response, size_t response_size)
         written = snprintf(response, response_size,
             "{\"pbmp\":1,\"type\":\"response\",\"id\":\"%s\",\"ok\":true,"
             "\"result\":{\"endpoint\":{\"id\":\"%s\",\"kind\":\"%s\","
-            "\"implementation\":{\"name\":\"%s\",\"version\":\"%s\"},\"state\":\"running\"}}}\n",
-            escaped_id, AMBNC_PBMP_ENDPOINT_ID, AMBNC_PBMP_ENDPOINT_KIND, AMBNC_NAME, AMBNC_VERSION);
+            "\"implementation\":{\"name\":\"%s\",\"version\":\"%s\"},\"state\":\"running\",\"uptime_seconds\":%lu}}}\n",
+            escaped_id, AMBNC_PBMP_ENDPOINT_ID, AMBNC_PBMP_ENDPOINT_KIND, AMBNC_NAME, AMBNC_VERSION,
+            ambnc_runtime_get_uptime());
     } else if (strcmp(method, "networks.list") == 0) {
         size_t used;
         unsigned int i;
