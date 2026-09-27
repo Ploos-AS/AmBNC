@@ -14,6 +14,14 @@ PBMP is not required to start, connect, reconnect, proxy IRC traffic, preserve b
 
 AmBNC reports endpoint kind `bouncer`.
 
+### Endpoint runtime telemetry
+
+`endpoint.info` also exposes the optional PBMP `uptime_seconds` field. It is
+the number of elapsed whole seconds since the current AmBNC service instance
+started. The value resets to `0` when AmBNC restarts and is runtime telemetry,
+not wall-clock time or a persistent lifetime counter. Clients MUST remain
+compatible with PBMP endpoints that omit this optional field.
+
 ## Transport
 
 The PBMP reference qualification tool uses a local Unix-domain JSONL transport. Classic AmigaOS does not provide Unix-domain sockets as a portable baseline, so AmBNC does not embed that transport in its core.
