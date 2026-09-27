@@ -20,6 +20,45 @@ static const char *skip_ws(const char *p)
     return p;
 }
 
+static const char *skip_json_value(const char *p)
+{
+    int depth = 0;
+    int in_string = 0;
+    int escaped = 0;
+
+    p = skip_ws(p);
+    if (!p || !*p) return 0;
+    if (*p == '"') {
+        ++p;
+        while (*p) {
+            if (!escaped && *p == '"') return p + 1;
+            if (!escaped && *p == '\\') escaped = 1; else escaped = 0;
+            ++p;
+        }
+        return 0;
+    }
+    if (*p != '{' && *p != '[') {
+        while (*p && *p != ',' && *p != '}') ++p;
+        return p;
+    }
+    do {
+        if (in_string) {
+            if (!escaped && *p == '"') in_string = 0;
+            if (!escaped && *p == '\\') escaped = 1; else escaped = 0;
+        } else if (*p == '"') {
+            in_string = 1; escaped = 0;
+        } else if (*p == '{' || *p == '[') {
+            ++depth;
+        } else if (*p == '}' || *p == ']') {
+            --depth;
+            if (depth == 0) return p + 1;
+            if (depth < 0) return 0;
+        }
+        ++p;
+    } while (*p);
+    return 0;
+}
+
 static const char *find_value(const char *json, const char *key)
 {
     const char *p;
@@ -62,25 +101,8 @@ static const char *find_value(const char *json, const char *key)
         if (name_len == key_len && strncmp(name, key, key_len) == 0)
             return p;
 
-        if (*p == '"') {
-            ++p;
-            escaped = 0;
-            while (*p) {
-                if (!escaped && *p == '"') { ++p; break; }
-                if (!escaped && *p == '\\') escaped = 1;
-                else escaped = 0;
-                ++p;
-            }
-        } else {
-            int depth = 0;
-            while (*p) {
-                if ((*p == ',' || *p == '}') && depth == 0)
-                    break;
-                if (*p == '{' || *p == '[') ++depth;
-                else if (*p == '}' || *p == ']') --depth;
-                ++p;
-            }
-        }
+        p = skip_json_value(p);
+        if (!p) return 0;
         p = skip_ws(p);
         if (*p == ',') { ++p; continue; }
         if (*p == '}') return 0;
@@ -99,8 +121,6 @@ static int unique_top_level_key(const char *json, const char *key)
         const char *name;
         size_t name_len = 0;
         int escaped = 0;
-        int depth = 0;
-
         p = skip_ws(p);
         if (*p == '}') break;
         if (*p++ != '"') return 0;
@@ -117,21 +137,8 @@ static int unique_top_level_key(const char *json, const char *key)
         if (name_len == key_len && strncmp(name, key, key_len) == 0)
             ++matches;
 
-        if (*p == '"') {
-            ++p; escaped = 0;
-            while (*p) {
-                if (!escaped && *p == '"') { ++p; break; }
-                if (!escaped && *p == '\\') escaped = 1; else escaped = 0;
-                ++p;
-            }
-        } else {
-            while (*p) {
-                if ((*p == ',' || *p == '}') && depth == 0) break;
-                if (*p == '{' || *p == '[') ++depth;
-                else if (*p == '}' || *p == ']') --depth;
-                ++p;
-            }
-        }
+        p = skip_json_value(p);
+        if (!p) return 0;
         p = skip_ws(p);
         if (*p == ',') { ++p; continue; }
         if (*p == '}') break;
