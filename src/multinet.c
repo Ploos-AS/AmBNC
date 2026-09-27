@@ -324,6 +324,7 @@ int ambnc_multinet_run(const struct ambnc_networks_config *config)
             if (control.request_disconnect) {
                 for (i = 0; i < config->count; ++i) disconnect_runtime(&runtimes[i], 0);
                 paused = 1;
+                ambnc_network_runtime_set_paused(1);
                 control.request_disconnect = 0;
             }
             if (control.request_reconnect) {
@@ -333,6 +334,7 @@ int ambnc_multinet_run(const struct ambnc_networks_config *config)
                     runtimes[i].backoff_index = 0;
                 }
                 paused = 0;
+                ambnc_network_runtime_set_paused(0);
                 control.request_reconnect = 0;
             }
             if (control.request_reload) control.request_reload = 0;
