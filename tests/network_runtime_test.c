@@ -24,11 +24,12 @@ int main(void)
     ambnc_network_runtime_reset();
     failed |= expect_int("reset paused", ambnc_network_runtime_get_paused(), 0);
     failed |= expect_uint("reset uptime", (unsigned int)ambnc_runtime_get_uptime(), 0);
-    for (i = 0; i < AMBNC_NETWORKS_MAX; ++i)
+    for (i = 0; i < AMBNC_NETWORKS_MAX; ++i) {
         failed |= expect_uint("reset reconnect attempts",
                               (unsigned int)ambnc_network_runtime_get_reconnect_attempts(i), 0);
         failed |= expect_uint("reset connected seconds",
                               (unsigned int)ambnc_network_runtime_get_connected_seconds(i), 0);
+    }
     for (i = 0; i < AMBNC_NETWORKS_MAX; ++i) {
         failed |= expect_int("reset state", ambnc_network_runtime_get(i),
                              AMBNC_NETWORK_RUNTIME_CONFIGURED);
