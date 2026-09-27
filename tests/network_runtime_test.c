@@ -22,6 +22,7 @@ int main(void)
     int failed = 0;
 
     ambnc_network_runtime_reset();
+    failed |= expect_int("reset paused", ambnc_network_runtime_get_paused(), 0);
     for (i = 0; i < AMBNC_NETWORKS_MAX; ++i) {
         failed |= expect_int("reset state", ambnc_network_runtime_get(i),
                              AMBNC_NETWORK_RUNTIME_CONFIGURED);
@@ -39,6 +40,11 @@ int main(void)
     failed |= expect_int("connected", ambnc_network_runtime_get(0),
                          AMBNC_NETWORK_RUNTIME_CONNECTED);
     failed |= expect_uint("connected retry", ambnc_network_runtime_get_retry(0), 0);
+
+    ambnc_network_runtime_set_paused(1);
+    failed |= expect_int("paused", ambnc_network_runtime_get_paused(), 1);
+    ambnc_network_runtime_set_paused(0);
+    failed |= expect_int("resumed", ambnc_network_runtime_get_paused(), 0);
 
     ambnc_network_runtime_set(0, AMBNC_NETWORK_RUNTIME_DISCONNECTED);
     ambnc_network_runtime_set_retry(0, 30);
