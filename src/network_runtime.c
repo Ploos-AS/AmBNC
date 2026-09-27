@@ -3,6 +3,7 @@
 static int runtime_states[AMBNC_NETWORKS_MAX];
 static unsigned int runtime_retry[AMBNC_NETWORKS_MAX];
 static unsigned long runtime_reconnect_attempts[AMBNC_NETWORKS_MAX];
+static unsigned long runtime_connected_seconds[AMBNC_NETWORKS_MAX];
 static int runtime_paused;
 static unsigned long runtime_uptime;
 
@@ -15,6 +16,7 @@ void ambnc_network_runtime_reset(void)
         runtime_states[i] = AMBNC_NETWORK_RUNTIME_CONFIGURED;
         runtime_retry[i] = 0;
         runtime_reconnect_attempts[i] = 0;
+        runtime_connected_seconds[i] = 0;
     }
 }
 
@@ -55,6 +57,19 @@ unsigned long ambnc_network_runtime_get_reconnect_attempts(unsigned int index)
     if (index >= AMBNC_NETWORKS_MAX)
         return 0;
     return runtime_reconnect_attempts[index];
+}
+
+void ambnc_network_runtime_set_connected_seconds(unsigned int index, unsigned long seconds)
+{
+    if (index < AMBNC_NETWORKS_MAX)
+        runtime_connected_seconds[index] = seconds;
+}
+
+unsigned long ambnc_network_runtime_get_connected_seconds(unsigned int index)
+{
+    if (index >= AMBNC_NETWORKS_MAX)
+        return 0;
+    return runtime_connected_seconds[index];
 }
 
 void ambnc_network_runtime_set_paused(int paused)
