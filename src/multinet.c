@@ -393,7 +393,10 @@ int ambnc_multinet_run(const struct ambnc_networks_config *config)
                     --runtimes[i].retry_seconds;
                     ambnc_network_runtime_set_retry(i, runtimes[i].retry_seconds);
                 }
-                if (runtimes[i].retry_seconds == 0) (void)connect_runtime(&runtimes[i]);
+                if (runtimes[i].retry_seconds == 0) {
+                    ambnc_network_runtime_increment_reconnect_attempts(i);
+                    (void)connect_runtime(&runtimes[i]);
+                }
             }
         }
     }
