@@ -3,10 +3,12 @@
 static int runtime_states[AMBNC_NETWORKS_MAX];
 static unsigned int runtime_retry[AMBNC_NETWORKS_MAX];
 static int runtime_paused;
+static unsigned long runtime_uptime;
 
 void ambnc_network_runtime_reset(void)
 {
     runtime_paused = 0;
+    runtime_uptime = 0;
     unsigned int i;
     for (i = 0; i < AMBNC_NETWORKS_MAX; ++i) {
         runtime_states[i] = AMBNC_NETWORK_RUNTIME_CONFIGURED;
@@ -48,4 +50,14 @@ void ambnc_network_runtime_set_paused(int paused)
 int ambnc_network_runtime_get_paused(void)
 {
     return runtime_paused;
+}
+
+void ambnc_runtime_set_uptime(unsigned long seconds)
+{
+    runtime_uptime = seconds;
+}
+
+unsigned long ambnc_runtime_get_uptime(void)
+{
+    return runtime_uptime;
 }
