@@ -106,6 +106,7 @@ static unsigned int runtime_index(const struct network_runtime *runtime)
 
 static void schedule_reconnect(struct network_runtime *runtime)
 {
+    ambnc_network_runtime_set(runtime_index(runtime), AMBNC_NETWORK_RUNTIME_DISCONNECTED);
     runtime->retry_seconds = reconnect_backoff[runtime->backoff_index];
     ambnc_network_runtime_set_retry(runtime_index(runtime), runtime->retry_seconds);
     if (runtime->backoff_index + 1U <
@@ -126,7 +127,12 @@ static void disconnect_runtime(struct network_runtime *runtime, int schedule)
                                           ":AmBNC NOTICE * :Upstream disconnected");
         ambnc_downstream_close_client(&runtime->downstream);
     }
-    if (schedule) schedule_reconnect(runtime);
+    if (schedule) {
+        schedule_reconnect(runtime);
+    } else {
+        runtime->retry_seconds = 0;
+        ambnc_network_runtime_set_retry(runtime_index(runtime), 0);
+    }
 }
 
 static int connect_runtime(struct network_runtime *runtime)
