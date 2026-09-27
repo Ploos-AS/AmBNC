@@ -69,9 +69,13 @@ Each configured network currently exposes:
   `connected`, or `disconnected`.
 - `retry_seconds`: remaining reconnect countdown in seconds. It is `0` when
   no reconnect countdown is active.
-- `reconnect_attempts`: number of automatic reconnect attempts made for this
-  network during the current AmBNC runtime instance. The initial connection
-  attempt is not counted. The counter starts at `0` after restart.
+- `reconnect_attempts`: number of reconnect-loop connection attempts made for
+  this network during the current AmBNC runtime instance. The initial startup
+  connection attempt is not counted. The counter starts at `0` after restart.
+- `connected_seconds`: whole seconds for which the current upstream connection
+  has remained continuously connected. It is `0` while disconnected,
+  connecting, or immediately after a new connection, and resets to `0` when
+  that connection ends.
 - `paused`: boolean operator-control state. `true` means automatic upstream
   connection/reconnection is intentionally paused; `false` means normal
   connection management is active.
@@ -90,8 +94,9 @@ automatic connection/reconnection; a non-zero `retry_seconds` gives the live
 backoff countdown. `disconnected` with `paused:true` means the operator has
 intentionally stopped automatic connection attempts, so `retry_seconds` is
 `0`. Resuming clears the pause condition and allows the normal connection
-loop to proceed. A successful connection also has `retry_seconds:0`. Each automatic attempt
-that begins after a reconnect countdown increments `reconnect_attempts`.
+loop to proceed. A successful connection also has `retry_seconds:0`. Each connection attempt issued by the reconnect loop increments
+`reconnect_attempts`; this includes an operator-requested reconnect because
+that request is executed through the same reconnect path.
 The counter is observational only: it does not alter backoff behavior and is
 not persisted across AmBNC restarts.
 
@@ -102,3 +107,8 @@ credentials.
 When no multinet configuration has been bound, `networks.list` returns an
 empty list rather than making PBMP a prerequisite for AmBNC startup.
 
+
+
+`connected_seconds` is per-network connection-duration telemetry and is
+separate from endpoint `uptime_seconds`, which describes the lifetime of the
+current AmBNC service instance. Neither value is a persistent lifetime counter.
