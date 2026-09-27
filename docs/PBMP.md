@@ -61,6 +61,9 @@ Each configured network currently exposes:
   `connected`, or `disconnected`.
 - `retry_seconds`: remaining reconnect countdown in seconds. It is `0` when
   no reconnect countdown is active.
+- `paused`: boolean operator-control state. `true` means automatic upstream
+  connection/reconnection is intentionally paused; `false` means normal
+  connection management is active.
 
 The response intentionally does not expose upstream hosts, ports, nick/user
 credentials, passwords, SASL secrets, or other connection secrets. The state is published by AmBNC's multinet runtime rather than inferred by
@@ -68,9 +71,19 @@ the PBMP adapter. `configured` means the network exists in configuration but
 has not yet entered a connection attempt; `connecting` marks an active
 attempt, `connected` means an upstream socket and IRC registration path have
 been established, and `disconnected` means the upstream is down, including manual disconnects
-and reconnect backoff. During automatic backoff, `retry_seconds` is the live
-countdown to the next connection attempt; successful connection resets it to
-`0`.
+and reconnect backoff.
+
+`state` and `paused` describe different dimensions. In particular,
+`disconnected` with `paused:false` means the network is eligible for normal
+automatic connection/reconnection; a non-zero `retry_seconds` gives the live
+backoff countdown. `disconnected` with `paused:true` means the operator has
+intentionally stopped automatic connection attempts, so `retry_seconds` is
+`0`. Resuming clears the pause condition and allows the normal connection
+loop to proceed. A successful connection also has `retry_seconds:0`.
+
+The pause flag is runtime control telemetry only. It does not reveal why an
+operator paused a network and does not expose any connection configuration or
+credentials.
 
 When no multinet configuration has been bound, `networks.list` returns an
 empty list rather than making PBMP a prerequisite for AmBNC startup.
