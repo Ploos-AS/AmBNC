@@ -357,7 +357,7 @@ int ambnc_pbmp_handle(const char *request, char *response, size_t response_size)
                 if (json_escape(n->name, name, sizeof(name)) != 0)
                     return -1;
                 written = snprintf(response + used, response_size - used,
-                    "%s{\"id\":\"network-%u\",\"name\":\"%s\",\"state\":\"%s\",\"retry_seconds\":%u,\"paused\":%s}",
+                    "%s{\"id\":\"network-%u\",\"name\":\"%s\",\"state\":\"%s\",\"retry_seconds\":%u,\"reconnect_attempts\":%lu,\"paused\":%s}",
                     i ? "," : "", i + 1U, name,
                     runtime_state_name(ambnc_network_runtime_get(i)),
                     ambnc_network_runtime_get_retry(i),
