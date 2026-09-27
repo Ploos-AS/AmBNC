@@ -267,12 +267,42 @@ static const char *runtime_state_name(int state)
     return "configured";
 }
 
+static int complete_json_object(const char *json)
+{
+    const char *p = skip_ws(json);
+    int depth = 0;
+    int in_string = 0;
+    int escaped = 0;
+
+    if (!p || *p != '{') return 0;
+    for (; *p; ++p) {
+        if (in_string) {
+            if (!escaped && *p == '"') in_string = 0;
+            if (!escaped && *p == '\\') escaped = 1; else escaped = 0;
+            continue;
+        }
+        if (*p == '"') { in_string = 1; escaped = 0; continue; }
+        if (*p == '{' || *p == '[') ++depth;
+        else if (*p == '}' || *p == ']') {
+            --depth;
+            if (depth < 0) return 0;
+            if (depth == 0) {
+                p = skip_ws(p + 1);
+                return *p == '\0';
+            }
+        }
+    }
+    return 0;
+}
+
 int ambnc_pbmp_handle(const char *request, char *response, size_t response_size)
 {
     char id[64], escaped_id[128], method[96], type[32];
     int written;
 
     if (!request || !response || response_size == 0)
+        return -1;
+    if (!complete_json_object(request))
         return -1;
     if (!unique_top_level_key(request, "pbmp") ||
         !unique_top_level_key(request, "type") ||
