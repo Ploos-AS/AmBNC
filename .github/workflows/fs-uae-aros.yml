@@ -34,11 +34,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          PBMP_REV=b8c9ff18fca516a118a7a45001860e5de9c95da3
+          PBMP_REV=248076e0bc7689ba3a92b807bf51a3b040884da5
           git clone https://github.com/Ploos-AS/PBMP.git build/pbmp-suite
           git -C build/pbmp-suite checkout "$PBMP_REV"
           cc -std=c99 -Wall -Wextra -Werror -Iinclude tests/pbmp_driver.c src/pbmp.c src/network_runtime.c -o build/tests/pbmp_driver
-          python3 ci/pbmp_bridge.py --socket /tmp/ambnc-pbmp.sock --driver "$PWD/build/tests/pbmp_driver" --requests 3 &
+          python3 ci/pbmp_bridge.py --socket /tmp/ambnc-pbmp.sock --driver "$PWD/build/tests/pbmp_driver" --requests 4 &
           bridge_pid=$!
           for i in {1..50}; do
             [ -S /tmp/ambnc-pbmp.sock ] && break
@@ -46,6 +46,7 @@ jobs:
           done
           python3 build/pbmp-suite/tools/qualify_endpoint.py \
             --profile endpoint-m0 \
+            --extension network-observability \
             --socket /tmp/ambnc-pbmp.sock \
             --implementation-name AmBNC \
             --implementation-version 0.7.0-m7 \
