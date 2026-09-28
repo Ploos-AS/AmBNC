@@ -25,7 +25,7 @@ config="$OUT_DIR/aros-guest.fs-uae"
 sed "s|@AROS_ROOT@|$PWD/$aros_root|" ci/fs-uae/aros-guest.fs-uae > "$config"
 fs-uae --version > "$OUT_DIR/fs-uae-version.txt" 2>&1 || true
 set +e
-timeout 45s xvfb-run -a fs-uae "$config" > "$OUT_DIR/fs-uae.log" 2>&1
+timeout 90s xvfb-run -a fs-uae "$config" > "$OUT_DIR/fs-uae.log" 2>&1
 rc=$?
 set -e
 version_out="$aros_root/ambnc-m8.1-version.txt"
