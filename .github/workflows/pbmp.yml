@@ -1,0 +1,55 @@
+name: PBMP conformance
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  endpoint-m0:
+    runs-on: ubuntu-latest
+    env:
+      AMBNC_PBMP_SOCKET: /tmp/ambnc.pbmp.sock
+    steps:
+      - name: Checkout AmBNC
+        uses: actions/checkout@v4
+      - name: Build and test PBMP adapter
+        run: |
+          make check-pbmp
+          cc -std=c99 -Wall -Wextra -Werror -Iinclude \
+            tests/pbmp_driver.c src/pbmp.c src/network_runtime.c \
+            -o build/tests/pbmp_driver
+      - name: Start host PBMP bridge
+        run: |
+          python3 ci/pbmp_bridge.py \
+            --socket "$AMBNC_PBMP_SOCKET" \
+            --driver "$PWD/build/tests/pbmp_driver" \
+            --requests 3 &
+          for i in {1..100}; do
+            test -S "$AMBNC_PBMP_SOCKET" && exit 0
+            sleep 0.1
+          done
+          exit 1
+      - name: Check out PBMP v1.0.0 suite
+        uses: actions/checkout@v4
+        with:
+          repository: Ploos-AS/PBMP
+          ref: v1.0.0
+          path: .pbmp-suite
+      - name: Qualify Endpoint Profile M0
+        run: |
+          python3 .pbmp-suite/tools/qualify_endpoint.py \
+            --socket "$AMBNC_PBMP_SOCKET" \
+            --profile endpoint-m0 \
+            --implementation-name ambnc \
+            --implementation-version "$GITHUB_SHA" \
+            --output ambnc-pbmp-conformance.json
+          python3 -c 'import json; r=json.load(open("ambnc-pbmp-conformance.json")); assert r["result"] == "pass"'
+      - name: Upload PBMP conformance report
+        uses: actions/upload-artifact@v4
+        with:
+          name: ambnc-pbmp-v1.0.0-endpoint-m0
+          path: ambnc-pbmp-conformance.json
+          if-no-files-found: error
